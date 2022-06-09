@@ -158,4 +158,12 @@ class Language extends ApolloContainer
         }
         return null;
     }
+	
+    /**
+     * @return array|string|null
+     */
+    public function getLanguages()
+    {
+        return $this->languages;
+    }
 }

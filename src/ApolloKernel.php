@@ -1,10 +1,9 @@
 <?php
 
-
 namespace Metapp\Apollo;
 
 use Metapp\Apollo\Html\Html;
-use Metapp\Apollo\Logger\LoggerVisualizer;
+use Metapp\Apollo\Twig\Twig;
 use Psr\Log\LoggerInterface;
 use Metapp\Apollo\Config\Config;
 use Metapp\Apollo\Form\ConfigProvider;
@@ -115,11 +114,6 @@ class ApolloKernel implements LoggerHelperInterface
     public function _fatal_handler()
     {
         $error = error_get_last();
-
-        $loggerVisualizer = new LoggerVisualizer();
-
-        $loggerVisualizer->addException($error);
-
         if(isset($error['type'])){
             switch ($error['type']) {
                 case E_ERROR:
@@ -131,18 +125,18 @@ class ApolloKernel implements LoggerHelperInterface
                     $this->error(ServerRequest::fromGlobals()->getUri()->getPath(), $error);
                     $exception = new HttpException(500);
                     $response = new Response($exception->getStatusCode(), array(), strtok($exception->getMessage(), "\n"));
-//                    if ($this->twig instanceof Environment) {
-////                        $params = array(
-////                            'title' => $response->getStatusCode(),
-////                            'block' => array(
-////                                'title' => $response->getReasonPhrase(),
-////                                'content' => $response->getBody()
-////                            ),
-////                        );
-////                        /** @var Twig $twig */
-////                        $twig = $this->twig;
-//                    }
-                $response->getBody()->write($loggerVisualizer->render());
+                    if ($this->twig instanceof Environment) {
+                        $params = array(
+                            'title' => $response->getStatusCode(),
+                            'block' => array(
+                                'title' => $response->getReasonPhrase(),
+                                'content' => $response->getBody()
+                            ),
+                        );
+                        /** @var Twig $twig */
+                        $twig = $this->twig;
+                        $response->getBody()->write($twig->render('errors.html.twig', $params));
+                    }
                     ob_end_clean();
                     echo Html::response($response);
                     break;

@@ -2,7 +2,6 @@
 
 namespace Metapp\Apollo\Strategies;
 
-use Metapp\Apollo\Logger\LoggerVisualizer;
 use \Exception;
 use League\Route\Http\Exception\MethodNotAllowedException;
 use League\Route\Http\Exception\NotFoundException;
@@ -40,11 +39,6 @@ class HtmlStrategy implements StrategyInterface, LoggerHelperInterface
     protected $router;
 
     /**
-     * @var LoggerVisualizer
-     */
-    protected $loggerVisualizer;
-
-    /**
      * HtmlStrategy constructor.
      * @param \Twig\Environment $twig
      * @param Router $router
@@ -57,7 +51,6 @@ class HtmlStrategy implements StrategyInterface, LoggerHelperInterface
         if ($logger) {
             $this->setLogger($logger);
         }
-        $this->loggerVisualizer = new LoggerVisualizer();
     }
 
     /**
@@ -87,7 +80,6 @@ class HtmlStrategy implements StrategyInterface, LoggerHelperInterface
     {
         return function /** @noinspection PhpUnusedParameterInspection */ (ServerRequestInterface $request, ResponseInterface $response) use ($exception) {
 
-            $this->loggerVisualizer->addException($exception);
             $response = $response->withStatus(404);
             $params = array(
                 'title' => $response->getStatusCode(),
@@ -95,8 +87,7 @@ class HtmlStrategy implements StrategyInterface, LoggerHelperInterface
                     'title' => $response->getReasonPhrase(),
                 ),
             );
-//            $response->getBody()->write($this->twig->render('errors.html.twig', $params));
-            $response->getBody()->write($this->loggerVisualizer->render());
+            $response->getBody()->write($this->twig->render('errors.html.twig', $params));
             return $this->setHeader($response);
         };
     }
@@ -126,7 +117,6 @@ class HtmlStrategy implements StrategyInterface, LoggerHelperInterface
     {
         return function /** @noinspection PhpUnusedParameterInspection */ (ServerRequestInterface $request, ResponseInterface $response) use ($exception) {
 
-            $this->loggerVisualizer->addException($exception);
             $response = $this->setHeader($response);
             if ($exception instanceof UnauthorizedException) {
                 $response = $response->withHeader('Location', $this->router->getRealUrl($this->router->getNamedRoute('login')->getPath()));
@@ -155,8 +145,7 @@ class HtmlStrategy implements StrategyInterface, LoggerHelperInterface
                     'trace' => $exception->getTraceAsString(),
                 ),
             );
-            $response->getBody()->write($this->loggerVisualizer->render());
-//            $response->getBody()->write($this->twig->render('errors.html.twig', $params));
+            $response->getBody()->write($this->twig->render('errors.html.twig', $params));
             return $response;
         };
     }

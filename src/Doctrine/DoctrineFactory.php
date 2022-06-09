@@ -18,6 +18,8 @@ use Metapp\Apollo\Config\Config;
 use Metapp\Apollo\Config\ConfigurableFactoryInterface;
 use Metapp\Apollo\Config\ConfigurableFactoryTrait;
 use Metapp\Apollo\Logger\Logger;
+use Metapp\Apollo\Factory\Factory;
+use Metapp\Apollo\Language\Language;
 use Metapp\Apollo\Utils\InvokableFactoryInterface;
 use League\Container\ImmutableContainerAwareInterface;
 use League\Container\ImmutableContainerAwareTrait;
@@ -51,6 +53,8 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
         $this->preparePDO();
 
         $isDevMode = $this->config->get('devMode', false);
+		$routeConfig = Factory::fromNames(array('route'), true);
+        $defaultLang = Language::parseLang($routeConfig);
         $paths = $this->config->get('paths', array());
 
         $config = Setup::createAnnotationMetadataConfiguration($paths, $isDevMode, null, null, false);
@@ -110,6 +114,7 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
         $translatableListener = new \Gedmo\Translatable\TranslatableListener();
         $translatableListener->setAnnotationReader($annotationReader);
         $translatableListener->setCacheItemPool($cache);
+        $translatableListener->setDefaultLocale($defaultLang);
         $eventManager->addEventSubscriber($translatableListener);
 
         $config->setMetadataDriverImpl($mappingDriver);
