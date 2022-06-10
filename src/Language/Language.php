@@ -28,7 +28,9 @@ class Language extends ApolloContainer
         $this->request = $request;
         $this->languages = array();
         foreach (array_diff(scandir($config->get(array('route', 'translator', 'path'), '')),array('.', '..')) as $lang) {
-            $this->languages[] = str_replace(".php","",$lang);
+			if (strpos($lang, '.php') !== false) {
+                $this->languages[] = str_replace(".php", "", $lang);
+            }
         }
         $this->default_language = $config->get(array('route', 'translator', 'default'), 'en');
         $this->lang = self::parseLang($config);
@@ -109,7 +111,11 @@ class Language extends ApolloContainer
         if (isset($this->translate[$lang][$key])) {
             $text = $this->translate[$lang][$key];
         }else{
-            $text = $this->translate[$this->default_language][$key];
+			if(isset($this->translate[$this->default_language][$key])) {
+                $text = $this->translate[$this->default_language][$key];
+            }else{
+                $text = '--{'.$key.'}--';
+            }
         }
         return $text;
     }
