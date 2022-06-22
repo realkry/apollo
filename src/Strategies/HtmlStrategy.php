@@ -79,7 +79,6 @@ class HtmlStrategy implements StrategyInterface, LoggerHelperInterface
     public function getNotFoundDecorator(NotFoundException $exception)
     {
         return function /** @noinspection PhpUnusedParameterInspection */ (ServerRequestInterface $request, ResponseInterface $response) use ($exception) {
-
             $response = $response->withStatus(404);
             $params = array(
                 'title' => $response->getStatusCode(),
@@ -116,7 +115,6 @@ class HtmlStrategy implements StrategyInterface, LoggerHelperInterface
     public function getExceptionDecorator(Exception $exception)
     {
         return function /** @noinspection PhpUnusedParameterInspection */ (ServerRequestInterface $request, ResponseInterface $response) use ($exception) {
-
             $response = $this->setHeader($response);
             if ($exception instanceof UnauthorizedException) {
                 $response = $response->withHeader('Location', $this->router->getRealUrl($this->router->getNamedRoute('login')->getPath()));
