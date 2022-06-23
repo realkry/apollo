@@ -56,15 +56,6 @@ class Language extends ApolloContainer
         foreach (array_diff(scandir($config->get(array('route','translator', 'path'), '')),array('.', '..')) as $lang) {
             $languages[] = str_replace(".php","",$lang);
         }
-        $params = $_GET;
-        if(isset($params["language"])){
-            if(in_array($params["request"],$languages)){
-                return $params["request"];
-            }
-            if(in_array($params["language"],$languages)){
-                return $params["language"];
-            }
-        }
 
         if(isset($_SERVER["HTTP_CONTENT_LANGUAGE"])){
             if(!empty($_SERVER["HTTP_CONTENT_LANGUAGE"])){
@@ -74,6 +65,15 @@ class Language extends ApolloContainer
             }
         }
 
+        $params = $_GET;
+        if(isset($params["language"])){
+            if(in_array($params["request"],$languages)){
+                return $params["request"];
+            }
+            if(in_array($params["language"],$languages)){
+                return $params["language"];
+            }
+        }
         if (array_key_exists('request', $params)) {
             $tmp = explode('/', $params['request']);
             $lng = array_shift($tmp);
