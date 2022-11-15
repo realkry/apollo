@@ -6,7 +6,7 @@ use Laminas\Form\View\Helper\Form;
 
 class FormStart extends Form
 {
-    public function render(FormInterface $form)
+    public function render(FormInterface $form): string
     {
         if (method_exists($form, 'prepare')) {
             $form->prepare();

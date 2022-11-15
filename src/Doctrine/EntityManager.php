@@ -14,7 +14,6 @@ class EntityManager extends \Doctrine\ORM\EntityManager implements LoggerHelperI
     /**
      * @param Connection $conn
      * @param Configuration $config
-     * @param EventManager $eventManager
      */
     public function __construct(Connection $conn, Configuration $config, EventManager $eventManager)
     {

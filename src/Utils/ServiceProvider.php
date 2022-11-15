@@ -7,7 +7,7 @@ use Metapp\Apollo\Html\Html;
 use Metapp\Apollo\Logger\Logger;
 use GuzzleHttp\Psr7\ServerRequest;
 use League\Container\Container;
-use League\Container\ImmutableContainerAwareInterface;
+use League\Container\ContainerAwareInterface;
 use League\Container\ReflectionContainer;
 use League\Container\ServiceProvider\AbstractServiceProvider;
 use League\Container\ServiceProvider\BootableServiceProviderInterface;
@@ -28,14 +28,7 @@ class ServiceProvider extends AbstractServiceProvider implements BootableService
      * @var ServerRequestInterface
      */
     protected $request;
-    /**
-     * @var array
-     */
-    protected $provides = array(
-        Config::class,
-        LoggerInterface::class,
-        ServerRequestInterface::class,
-    );
+
 
     public function __construct(Config $config, ServerRequestInterface $request = null)
     {
@@ -49,13 +42,13 @@ class ServiceProvider extends AbstractServiceProvider implements BootableService
         $this->request = $request;
     }
 
-    public function boot()
+    public function boot() :void
     {
         /** @var Container $container */
         $container = $this->getContainer();
 
         $container
-            ->inflector(ImmutableContainerAwareInterface::class)
+            ->inflector(ContainerAwareInterface::class)
             ->invokeMethod('setContainer', array('container'=>$container));
 
         $serviceManager = new ServiceManager($this->getContainer());
@@ -65,10 +58,22 @@ class ServiceProvider extends AbstractServiceProvider implements BootableService
         $container->delegate(new ReflectionContainer());
     }
 
-    public function register()
+    public function register() :void
     {
-        $this->getContainer()->share(LoggerInterface::class, ($this->logger instanceof LoggerInterface ? $this->logger : new Logger('Apollo')));
-        $this->getContainer()->share(ServerRequestInterface::class, $this->request);
-        $this->getContainer()->share(Config::class, $this->config);
+        $this->getContainer()->addShared(LoggerInterface::class, ($this->logger instanceof LoggerInterface ? $this->logger : new Logger('Apollo')));
+        $this->getContainer()->addShared(ServerRequestInterface::class, $this->request);
+        $this->getContainer()->addShared(Config::class, $this->config);
+    }
+
+
+    public function provides(string $id): bool
+    {
+        $services = [
+            Config::class,
+            LoggerInterface::class,
+            ServerRequestInterface::class,
+        ];
+
+        return in_array($id, $services);
     }
 }

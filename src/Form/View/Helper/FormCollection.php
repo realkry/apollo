@@ -14,7 +14,7 @@ class FormCollection extends BaseFormCollection implements TwigAwareInterface
 
     protected $onlyRenderTemplateWrapper =  '<span data-%s-template="%s"></span>';
 
-    public function render(ElementInterface $element)
+    public function render(ElementInterface $element): string
     {
         $this->setWrapper('<div%4$s>%2$s%1$s%3$s</div>');
         return parent::render($element);

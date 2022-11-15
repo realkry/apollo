@@ -6,7 +6,6 @@ namespace Metapp\Apollo\Doctrine;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\EventManager;
 use Doctrine\Common\EventSubscriber;
-use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\Configuration;
@@ -21,14 +20,14 @@ use Metapp\Apollo\Logger\Logger;
 use Metapp\Apollo\Factory\Factory;
 use Metapp\Apollo\Language\Language;
 use Metapp\Apollo\Utils\InvokableFactoryInterface;
-use League\Container\ImmutableContainerAwareInterface;
-use League\Container\ImmutableContainerAwareTrait;
+use League\Container\ContainerAwareInterface;
+use League\Container\ContainerAwareTrait;
 use PDO;
 
-class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryInterface, ImmutableContainerAwareInterface
+class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryInterface, ContainerAwareInterface
 {
     use ConfigurableFactoryTrait;
-    use ImmutableContainerAwareTrait;
+    use ContainerAwareTrait;
 
     /**
      * @var Logger
@@ -37,7 +36,6 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
 
     /**
      * @return EntityManager
-     * @throws DBALException
      * @throws ORMException
      * @throws Exception
      */
@@ -63,9 +61,10 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
         $this->setProxy($config);
 
         $dbParams = $this->config->get('dbParams');
+
         try {
             $connection = DriverManager::getConnection($dbParams, $config);
-        } catch (DBALException $e) {
+        } catch (\Doctrine\DBAL\Exception $e) {
             $this->logger->error('Doctrine', array($e->getMessage()));
             throw $e;
         }
@@ -154,10 +153,17 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
                 }
             }
             if ($pdo instanceof PDO) {
+                $pdoConfig = Factory::fromNames(array('db'), true);
                 $this->config->set(
                     array('dbParams'),
                     array(
-                        'pdo' => $pdo,
+                        'pdo' => $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION),
+                        'driver' => 'pdo_' . $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME),
+                        'host' => $pdoConfig->get(array('db','dsn','host')),
+                        'port' => $pdoConfig->get(array('db','dsn','port')),
+                        'user' => $pdoConfig->get(array('db','db_user')),
+                        'dbname' => $pdoConfig->get(array('db','dsn','dbname')),
+                        'password' => $pdoConfig->get(array('db','db_pass')),
                     )
                 );
             }
@@ -239,7 +245,7 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
     }
 
     /**
-     * @throws DBALException
+     * @throws \Doctrine\DBAL\Exception
      */
     private function addTypes()
     {
@@ -252,7 +258,7 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
                     } else {
                         Type::addType($name, $className);
                     }
-                } catch (DBALException $e) {
+                } catch (\Doctrine\DBAL\Exception $e) {
                     $this->logger->error('Doctrine:types', array('name' => $name, 'class' => $className, 'e' => $e->getMessage()));
                     throw $e;
                 }
@@ -262,7 +268,7 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
 
     /**
      * @param EntityManager $entityManager
-     * @throws DBALException
+     * @throws \Doctrine\DBAL\Exception
      */
     private function addTypeMappings(EntityManager $entityManager)
     {
@@ -271,7 +277,7 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
             foreach ($typeMappings as $dbType => $doctrineType) {
                 try {
                     $entityManager->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping($dbType, $doctrineType);
-                } catch (DBALException $e) {
+                } catch (\Doctrine\DBAL\Exception $e) {
                     $this->logger->error('Doctrine:typeMappings', array('dbType' => $dbType, 'doctrineType' => $doctrineType, 'e' => $e->getMessage()));
                     throw $e;
                 }

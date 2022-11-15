@@ -7,7 +7,7 @@ class FormCheckbox extends \Laminas\Form\View\Helper\FormCheckbox
     /**
      * {@inheritdoc}
      */
-    public function getInlineClosingBracket()
+    public function getInlineClosingBracket(): string
     {
         return '><span class="checkmark"></span>';
     }

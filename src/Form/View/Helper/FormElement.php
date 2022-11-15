@@ -5,7 +5,7 @@ namespace Metapp\Apollo\Form\View\Helper;
 
 use InvalidArgumentException;
 use LogicException;
-use Metapp\Apollo\Factory;
+use Metapp\Apollo\Factory\Factory;
 use Metapp\Apollo\Twig\Interfaces\TwigAwareInterface;
 use Metapp\Apollo\Twig\Traits\TwigAwareTrait;
 use Traversable;
@@ -23,7 +23,7 @@ class FormElement extends BaseFormElement implements TwigAwareInterface
     // @var string
     protected static $inputWrapperFormat = '<div class="%s">%s';
 
-    public function render(ElementInterface $element)
+    public function render(ElementInterface $element): string
     {
 //        $req = '';
 //        if ($element->getOption('required')) {
@@ -31,7 +31,7 @@ class FormElement extends BaseFormElement implements TwigAwareInterface
 //        }
 //        return sprintf('<div class="%s">%s</div>', $req, parent::render($element));
         if (!in_array($element->getAttribute('type'), array('button', 'submit', 'reset', 'hidden'))) {
-            $class = explode(' ', $element->getAttribute('class'));
+            $class = explode(' ', !empty($element->getAttribute('class')) ? $element->getAttribute('class') : '');
             if ($element->getAttribute('type') != "checkbox") {
                 $class[] = 'form-control';
             }

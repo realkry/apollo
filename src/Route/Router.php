@@ -1,24 +1,38 @@
 <?php
 
-
 namespace Metapp\Apollo\Route;
 
+use Cherif\InertiaPsr15\Middleware\InertiaMiddleware;
+use FastRoute\DataGenerator;
+use FastRoute\DataGenerator\GroupCountBased as GroupCountBasedDataGenerator;
+use FastRoute\RouteCollector;
+use FastRoute\RouteParser;
+use FastRoute\RouteParser\Std as StdRouteParser;
+use League\Container\Container;
+use League\Route\ContainerAwareInterface;
+use League\Route\ContainerAwareTrait;
 use Metapp\Apollo\Auth\Auth;
 use Metapp\Apollo\Config\Config;
 use Metapp\Apollo\Config\ConfigurableFactoryInterface;
 use Metapp\Apollo\Config\ConfigurableFactoryTrait;
 use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Psr7\Uri;
-use League\Route\RouteCollection;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Metapp\Apollo\Logger\Interfaces\LoggerHelperInterface;
 use Metapp\Apollo\Logger\Traits\LoggerHelperTrait;
 
-class Router extends RouteCollection implements LoggerHelperInterface, ConfigurableFactoryInterface
+class Router extends \League\Route\Router implements LoggerHelperInterface, ConfigurableFactoryInterface, ContainerAwareInterface
 {
     use LoggerHelperTrait;
     use ConfigurableFactoryTrait;
+    use ContainerAwareTrait;
+
+    /**
+     * @var \Psr\Container\ContainerInterface
+     */
+    protected $container;
 
     /**
      * @var array
@@ -40,6 +54,25 @@ class Router extends RouteCollection implements LoggerHelperInterface, Configura
     private $validator;
 
     /**
+     * Constructor.
+     *
+     * @param \Psr\Container\ContainerInterface $container
+     */
+    public function __construct(ContainerInterface $container = null,
+                                RouteParser        $parser    = null,
+                                DataGenerator      $generator = null) {
+        $this->container = ($container instanceof ContainerInterface) ? $container : new Container;
+        // build parent route collector
+        $parser    = ($parser instanceof RouteParser) ? $parser : new RouteParser\Std();
+        $generator = ($generator instanceof DataGenerator) ? $generator : new DataGenerator\GroupCountBased();
+        parent::__construct(new RouteCollector(
+            $parser,
+            $generator
+        ));
+       // $this->lazyMiddleware(\Cherif\InertiaPsr15\Middleware\InertiaMiddleware::class);
+    }
+
+    /**
      * @return Router
      */
     public function buildRoutes()
@@ -54,7 +87,9 @@ class Router extends RouteCollection implements LoggerHelperInterface, Configura
         if ($this->config->has('strategy')) {
             $strategyClass = $this->config->get('strategy');
             if ($this->container->has($strategyClass)) {
-                $this->setStrategy($this->container->get($strategyClass));
+                $str = $this->container->get($strategyClass);
+                $str->setContainer($this->container);
+                $this->setStrategy($str);
             }
         }
         if ($this->config->has('paths')) {

@@ -1,6 +1,6 @@
 <?php
-namespace Metapp\Apollo\Html;
 
+namespace Metapp\Apollo\Html;
 
 use DOMDocument;
 use GuzzleHttp\Psr7\Header;
@@ -45,8 +45,7 @@ class Html
     public static function parseRequest(ServerRequestInterface &$serverRequest)
     {
         $method = $serverRequest->getMethod();
-        switch ($method) {
-            case 'POST': case 'PATCH': case 'PUT':
+        if(in_array($method,array('POST','PUT','PATCH','DELETE'))){
             $contentType = Html::getContentType($serverRequest);
             switch ($contentType) {
                 case 'application/x-www-form-urlencoded':
@@ -63,7 +62,6 @@ class Html
                     break;
             }
             $serverRequest = $serverRequest->withQueryParams(array_merge($serverRequest->getQueryParams(), (array)$serverRequest->getParsedBody()));
-            break;
         }
     }
 

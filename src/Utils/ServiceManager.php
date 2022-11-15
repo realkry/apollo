@@ -2,17 +2,17 @@
 namespace Metapp\Apollo\Utils;
 
 
+use League\Container\DefinitionContainerInterface;
 use Metapp\Apollo\Config\Config;
 use Metapp\Apollo\Config\ConfigurableFactoryInterface;
-use League\Container\ContainerInterface;
 use League\Container\Exception\NotFoundException;
-use League\Container\ImmutableContainerAwareInterface;
-use League\Container\ImmutableContainerAwareTrait;
-use League\Container\ImmutableContainerInterface;
+use League\Container\ContainerAwareInterface;
+use League\Container\ContainerAwareTrait;
+use Psr\Container\ContainerInterface;
 
-class ServiceManager implements ImmutableContainerInterface
+class ServiceManager implements ContainerInterface, ContainerAwareInterface
 {
-    use ImmutableContainerAwareTrait;
+    use ContainerAwareTrait;
 
     /**
      * @var array
@@ -33,9 +33,9 @@ class ServiceManager implements ImmutableContainerInterface
 
     /**
      * ServiceManager constructor.
-     * @param ContainerInterface $container
+     * @param DefinitionContainerInterface $container
      */
-    public function __construct(ContainerInterface $container)
+    public function __construct(DefinitionContainerInterface $container)
     {
         $this->setContainer($container);
     }
@@ -131,7 +131,7 @@ class ServiceManager implements ImmutableContainerInterface
     private function _build(InvokableFactoryInterface $factory, $alias)
     {
         $hash = $this->_hash($factory, $alias);
-        if ($factory instanceof ImmutableContainerAwareInterface) {
+        if ($factory instanceof ContainerAwareInterface) {
             $factory->setContainer($this->container);
         }
         if ($factory instanceof ConfigurableFactoryInterface) {

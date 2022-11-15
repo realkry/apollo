@@ -25,7 +25,7 @@ class FormRow extends BaseFormRow
         return $this->render($element, $labelPosition);
     }
 
-    public function render(ElementInterface $element, $labelPosition = null)
+    public function render(ElementInterface $element, $labelPosition = null): string
     {
 //        $element->getOption('label_groupped');
         if ($element->getOption('label_groupped')) {

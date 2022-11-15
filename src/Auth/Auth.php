@@ -42,7 +42,7 @@ class Auth
             $decodedData = JWT::decode($token, $this->config->get(array('jwt','key')), array('HS256'));
             if (is_object($decodedData)) {
                 $fetchData = $decodedData->data;
-                $table = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user'), 'Session:Users');
+                $table = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user'));
                 $where = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user_auth_key'), 'email');
                 $a = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user_auth_data'), 'email');
                 $data = $fetchData->{$a};
@@ -61,7 +61,7 @@ class Auth
             $decodedData = JWT::decode($token, $this->config->get(array('jwt','key')), array('HS256'));
             if (is_object($decodedData)) {
                 $fetchData = $decodedData->data;
-                $table = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user'), 'Session:Users');
+                $table = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user'));
                 $where = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user_auth_key'), 'email');
                 $a = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user_auth_data'), 'email');
                 $data = $fetchData->{$a};

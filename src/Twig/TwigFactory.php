@@ -3,20 +3,20 @@
 namespace Metapp\Apollo\Twig;
 
 use Exception;
+use League\Container\ContainerAwareInterface;
 use Metapp\Apollo\Config\ConfigurableFactoryInterface;
 use Metapp\Apollo\Config\ConfigurableFactoryTrait;
 use Metapp\Apollo\Logger\Logger;
 use Metapp\Apollo\Utils\InvokableFactoryInterface;
-use League\Container\ImmutableContainerAwareInterface;
-use League\Container\ImmutableContainerAwareTrait;
+use League\Container\ContainerAwareTrait;
 use Twig\Extension\AbstractExtension;
 use Twig\Extension\DebugExtension;
 use Twig\Loader\FilesystemLoader;
 
-class TwigFactory implements InvokableFactoryInterface, ConfigurableFactoryInterface, ImmutableContainerAwareInterface
+class TwigFactory implements InvokableFactoryInterface, ConfigurableFactoryInterface, ContainerAwareInterface
 {
     use ConfigurableFactoryTrait;
-    use ImmutableContainerAwareTrait;
+    use ContainerAwareTrait;
 
     /**
      * @return Twig

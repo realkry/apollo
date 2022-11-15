@@ -75,9 +75,7 @@ class Helper implements LoggerHelperInterface
     public function getSessionUser()
     {
         if (!empty($_SESSION[$this->session_key])) {
-            /** @var SessionRepository $sessionRepository */
-            $sessionRepository = $this->entityManager->getRepository($this->config->get(array('Session', 'entity', 'session'), 'Session:Session'));
-            /** @var Session $session */
+            $sessionRepository = $this->entityManager->getRepository($this->config->get(array('Session', 'entity', 'session')));
             $session = $sessionRepository->findOneBy(array($this->config->get(array('Session', 'entity', 'session_key'), 'userid') => $_SESSION[$this->session_key], 'sessionid' => session_id()));
             if ($session) {
                 $getter = "get".ucfirst($this->config->get(array('Session', 'entity', 'session_key'), 'userid'));

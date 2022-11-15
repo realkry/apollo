@@ -9,7 +9,7 @@ use Laminas\Form\View\Helper\Form;
 
 class FormEnd extends Form
 {
-    public function render(FormInterface $form)
+    public function render(FormInterface $form): string
     {
         $content = "";
         $ajax = $form->getOption("ajax");

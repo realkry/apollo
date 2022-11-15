@@ -4,7 +4,7 @@ namespace Metapp\Apollo\Form\View\Helper;
 
 
 use Laminas\View\Renderer\PhpRenderer;
-use Metapp\Apollo\Factory;
+use Metapp\Apollo\Factory\Factory;
 use Metapp\Apollo\Form\ConfigProvider;
 
 class ElementRender

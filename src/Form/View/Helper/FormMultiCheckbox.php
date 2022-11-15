@@ -7,7 +7,7 @@ class FormMultiCheckbox extends \Laminas\Form\View\Helper\FormMultiCheckbox
     /**
      * {@inheritdoc}
      */
-    public function getInlineClosingBracket()
+    public function getInlineClosingBracket(): string
     {
         return '><span class="checkmark"></span>';
     }

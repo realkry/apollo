@@ -2,24 +2,24 @@
 namespace Metapp\Apollo\Route;
 
 
-use Metapp\Apollo\Html\Html;
-use Exception;
 use FastRoute\DataGenerator;
 use FastRoute\RouteParser;
+use League\Container\Container;
+use Metapp\Apollo\Html\Html;
+use Exception;
 use Metapp\Apollo\Config\ConfigurableFactoryInterface;
 use Metapp\Apollo\Config\ConfigurableFactoryTrait;
 use Metapp\Apollo\Utils\InvokableFactoryInterface;
 use GuzzleHttp\Psr7\Response;
-use League\Container\Container;
-use League\Container\ImmutableContainerAwareInterface;
-use League\Container\ImmutableContainerAwareTrait;
+use League\Container\ContainerAwareInterface;
+use League\Container\ContainerAwareTrait;
 use Psr\Http\Message\ServerRequestInterface;
 use Twig\Environment;
 
-class RouteFactory implements InvokableFactoryInterface, ConfigurableFactoryInterface, ImmutableContainerAwareInterface
+class RouteFactory implements InvokableFactoryInterface, ConfigurableFactoryInterface, ContainerAwareInterface
 {
     use ConfigurableFactoryTrait;
-    use ImmutableContainerAwareTrait;
+    use ContainerAwareTrait;
 
     /**
      * @return Router
@@ -48,14 +48,14 @@ class RouteFactory implements InvokableFactoryInterface, ConfigurableFactoryInte
                             'title' => $response->getReasonPhrase(),
                         ),
                     );
-                    $response->getBody()->write($twig->render('errors.html.twig', $params));
+ $response->getBody()->write($twig->render('errors.html.twig', $params));
                 }
             }
             die(Html::response($response));
         }
 
         $container = new Container();
-        $container->share(ServerRequestInterface::class, $request);
+        $container->addShared(ServerRequestInterface::class, $request);
         $container->delegate($this->container);
 
         $parser = $this->container->has(RouteParser::class) ? $this->container->get(RouteParser::class): null;
