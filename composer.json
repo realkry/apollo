@@ -15,7 +15,7 @@
         }
     },
     "require": {
-        "php": "8.1.10",
+        "php": ">=8",
         "ext-curl": "*",
         "ext-openssl": "*",
         "ext-date": "*",
