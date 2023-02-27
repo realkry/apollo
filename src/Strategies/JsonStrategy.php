@@ -2,116 +2,165 @@
 
 namespace Metapp\Apollo\Strategies;
 
-use Metapp\Apollo\Utils\APIResponseBuilder;
-use \Exception;
+
+use Exception;
+use League\Route\Http\Exception as HttpException;
 use League\Route\Http\Exception\MethodNotAllowedException;
 use League\Route\Http\Exception\NotFoundException;
-use League\Route\Http\Exception as HttpException;
+use League\Route\Http\Exception\UnauthorizedException;
 use League\Route\Route;
-use League\Route\Strategy\StrategyInterface;
+use League\Route\Strategy\ApplicationStrategy;
+use Metapp\Apollo\Logger\Interfaces\LoggerHelperInterface;
+use Metapp\Apollo\Logger\Traits\LoggerHelperTrait;
+use Metapp\Apollo\Route\Router;
+use Metapp\Apollo\Twig\Twig;
+use Metapp\Apollo\Utils\APIResponseBuilder;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use RuntimeException;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
+use Throwable;
+use Twig\Environment;
 
-class JsonStrategy implements StrategyInterface
+class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
 {
-    private $content_type = 'application/json';
+	use LoggerHelperTrait;
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getCallable(Route $route, array $vars)
-    {
-        return function (ServerRequestInterface $request, ResponseInterface $response, callable $next) use ($route, $vars) {
-            $response = call_user_func_array($route->getCallable(), array($request, $response, $vars));
+	/**
+	 * @var string
+	 */
+	private $content_type = 'application/json';
 
-            if (!$response instanceof ResponseInterface) {
-                throw new RuntimeException(
-                    'Route callables must return an instance of (Psr\Http\Message\ResponseInterface)'
-                );
-            }
+	/**
+	 * @var \Twig\Environment
+	 */
+	protected $twig;
 
-            $response = $this->setHeader($response);
+	/**
+	 * @var Router
+	 */
+	protected $router;
 
-            return $next($request, $response);
-        };
-    }
+	/**
+	 * @param \Twig\Environment $twig
+	 * @param Router $router
+	 * @param LoggerInterface|null $logger
+	 */
+	public function __construct(Environment $twig, Router $router, LoggerInterface $logger = null)
+	{
+		$this->twig = $twig;
+		$this->router = $router;
+		if ($logger) {
+			$this->setLogger($logger);
+		}
+	}
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getNotFoundDecorator(NotFoundException $exception)
-    {
-        return function /** @noinspection PhpUnusedParameterInspection */ (ServerRequestInterface $request, ResponseInterface $response) use ($exception) {
-            $apiResponseBuilder = new APIResponseBuilder(404, "Method not found");
-            $response->getBody()->write($apiResponseBuilder->build());
-            return $this->setHeader($response)->withStatus(404);
-        };
-    }
+	public function invokeRouteCallable(Route $route, ServerRequestInterface $request): ResponseInterface
+	{
+		$response = new \Laminas\Diactoros\Response;
+		$controller = $route->getCallable($this->getContainer());
+		$response = $controller($request, $response, $route->getVars());
+		return $this->decorateResponse($response);
+	}
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getMethodNotAllowedDecorator(MethodNotAllowedException $exception)
-    {
-        return function /** @noinspection PhpUnusedParameterInspection */ (ServerRequestInterface $request, ResponseInterface $response) use ($exception) {
-            $apiResponseBuilder = new APIResponseBuilder(405, "Method not allowed");
-            $response->getBody()->write($apiResponseBuilder->build());
-            return $this->setHeader($response)->withStatus(405);
-        };
-    }
+	public function getNotFoundDecorator(NotFoundException $exception): MiddlewareInterface
+	{
+		return $this->buildStandardException(404, "Method not found");
+	}
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getExceptionDecorator(Exception $exception)
-    {
-        return function /** @noinspection PhpUnusedParameterInspection */ (ServerRequestInterface $request, ResponseInterface $response) use ($exception) {
-            $response = $this->setHeader($response);
+	public function getMethodNotAllowedDecorator(MethodNotAllowedException $exception): MiddlewareInterface
+	{
+		return $this->buildStandardException(405, "Method not allowed");
+	}
 
-            if ($exception instanceof UnauthorizedException) {
-                $apiResponseBuilder = new APIResponseBuilder(401, "Unauthorized");
-                $response->getBody()->write($apiResponseBuilder->build());
-                return $response;
-            }
+	public function getThrowableHandler(): MiddlewareInterface
+	{
+		return new class ($this->twig, $this->router) implements MiddlewareInterface
+		{
+			protected $router;
 
-            if ($exception instanceof HttpException) {
-                $response = $response->withStatus($exception->getStatusCode());
-                $message = $exception->getMessage();
-                $data = array();
-                try {
-                    $messageDecoded = json_decode($message, true);
-                    if (!empty($messageDecoded)) {
-                        if (isset($messageDecoded["message"])) {
-                            $message = $messageDecoded["message"];
-                        }
-                        if (isset($messageDecoded["data"])) {
-                            $data = $messageDecoded["data"];
-                        }
-                    }
-                } catch (Exception $e) {
-                }
-                
-                $apiResponseBuilder = new APIResponseBuilder($exception->getStatusCode(), $message, $data);
-                $response->getBody()->write($apiResponseBuilder->build());
+			public function __construct(Twig $twig, Router $router)
+			{
+				$this->router = $router;
+			}
 
-                return $response;
-            }
-            $data = array(
-                "message" => $exception->getMessage(),
-                "trace" => $exception->getTrace()
-            );
-            $apiResponseBuilder = new APIResponseBuilder(500, "Internal server error", $data);
-            $response->getBody()->write($apiResponseBuilder->build());
-            return $response;
-        };
-    }
+			public function process(
+				ServerRequestInterface $request,
+				RequestHandlerInterface $handler
+			): ResponseInterface {
+				try {
+					return $handler->handle($request);
+				} catch (Exception $exception) {
+					$response = new \Laminas\Diactoros\Response;
+					if ($exception instanceof UnauthorizedException) {
+						$apiResponseBuilder = new APIResponseBuilder(401, "Unauthorized");
+						$response->getBody()->write($apiResponseBuilder->build());
+						return $response;
+					}
+					if ($exception instanceof HttpException) {
+						$message = $exception->getMessage();
+						$data = array();
+						try {
+							$messageDecoded = json_decode($message, true);
+							if (!empty($messageDecoded)) {
+								if (isset($messageDecoded["message"])) {
+									$message = $messageDecoded["message"];
+								}
+								if (isset($messageDecoded["data"])) {
+									$data = $messageDecoded["data"];
+								}
+							}
+						} catch (Exception $e) {
+						}
 
-    public function setHeader(ResponseInterface $response)
-    {
-        if (!$response->hasHeader('content-type')) {
-            $response = $response->withHeader('content-type', $this->content_type);
-        }
-        return $response;
-    }
+						$apiResponseBuilder = new APIResponseBuilder($exception->getStatusCode(), $message, $data);
+						$response->getBody()->write($apiResponseBuilder->build());
+						return $response;
+					}
+
+					$response = $response->withStatus(500);
+					$apiResponseBuilder = new APIResponseBuilder($response->getStatusCode(), $response->getReasonPhrase());
+					$response->getBody()->write($apiResponseBuilder->build());
+					return $response;
+				}
+			}
+		};
+	}
+
+	/**
+	 * @param $statusCode
+	 * @return MiddlewareInterface
+	 */
+	private function buildStandardException($statusCode = 400, $message = null): MiddlewareInterface
+	{
+		return new class ($this->twig, $statusCode, $message) implements MiddlewareInterface {
+			protected $twig;
+			protected $statusCode;
+			protected $message;
+
+			public function __construct(Twig $twig,$statusCode, $message)
+			{
+				$this->twig = $twig;
+				$this->statusCode = $statusCode;
+				$this->message = $message;
+			}
+
+			public function process(
+				ServerRequestInterface  $request,
+				RequestHandlerInterface $handler
+			): ResponseInterface
+			{
+				$response = new \Laminas\Diactoros\Response;
+				$response = $response->withStatus($this->statusCode);
+				if($this->message != null){
+					$apiResponseBuilder = new APIResponseBuilder($this->statusCode, $this->message);
+				}else{
+					$apiResponseBuilder = new APIResponseBuilder($response->getStatusCode(), $response->getReasonPhrase());
+				}
+				$response->getBody()->write($apiResponseBuilder->build());
+				return $response;
+			}
+		};
+	}
 }

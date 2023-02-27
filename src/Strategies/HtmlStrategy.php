@@ -94,7 +94,6 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
                     return $handler->handle($request);
                 } catch (Exception $exception) {
                     $response = new \Laminas\Diactoros\Response;
-                    print_r($exception->getMessage());
                     if ($exception instanceof UnauthorizedException) {
                         $response = $response->withHeader('Location', $this->router->getRealUrl($this->router->getNamedRoute('login')->getPath()));
                         return $response;
@@ -108,7 +107,7 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
                                 'content' => json_decode(strtok("\n"), true),
                             ),
                         );
-                        $response->getBody()->write(implode("<br>",$params));
+						$response->getBody()->write($this->twig->render('errors.html.twig',$params));
                         return $response;
                     }
 
@@ -121,7 +120,7 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
                             'trace' => $exception->getTraceAsString(),
                         ),
                     );
-                    $response->getBody()->write(implode("<br>",$params));
+                    $response->getBody()->write($this->twig->render('errors.html.twig',$params));
                     return $response;
                 }
             }
@@ -157,7 +156,7 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
                         'title' => $response->getReasonPhrase(),
                     ),
                 );
-                $response->getBody()->write(json_encode($params));
+				$response->getBody()->write($this->twig->render('errors.html.twig',$params));
                 return $response;
             }
         };

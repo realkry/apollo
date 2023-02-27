@@ -61,6 +61,19 @@ class AuthMiddleware implements MiddlewareInterface
             }
         }
 
+        if ($this->options["auth_method"] == Auth::Cookie) {
+			if(isset($_COOKIE["auth_token"])){
+				$jwt = $_COOKIE["auth_token"];
+				if ($jwt) {
+					if ($this->auth->validateJWT($jwt)) {
+						$valid = true;
+					}else{
+						setcookie('auth_token', null, time() - 3600);
+					}
+				}
+            }
+        }
+
         if ($this->options["auth_method"] == Auth::Session) {
             $sessionRep = $this->config->get(array('route', 'modules', 'Session', 'entity', 'session_repository'));
             $sessionRepository = $this->entityManager->getRepository($sessionRep);

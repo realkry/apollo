@@ -92,7 +92,19 @@ class Helper implements LoggerHelperInterface
                         }
                     }
                 }
-            }
+            }else{
+				if(isset($_COOKIE["auth_token"])){
+					$jwt = $_COOKIE["auth_token"];
+					if ($jwt) {
+						$user = $this->auth->getUserByJWT($jwt);
+						if (is_object($user)) {
+							return $user;
+						}else{
+							setcookie('auth_token', null, time() - 3600);
+						}
+					}
+				}
+			}
         }
         return false;
     }
