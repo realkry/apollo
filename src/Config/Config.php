@@ -9,11 +9,11 @@ class Config
     /**
      * @var array
      */
-    private $config = array();
+    private array $config = array();
     /**
      * @var array
      */
-    private $base = array();
+    private array $base = array();
 
     /**
      * Config constructor.
@@ -30,8 +30,8 @@ class Config
      * @param array|string $dimensionNames
      * @return array|string|null
      */
-    public function has($dimensionNames)
-    {
+    public function has($dimensionNames): bool|array|string|null
+	{
         $keys = $this->_keys($dimensionNames);
         return $this->_has($keys);
     }

@@ -20,7 +20,7 @@ class Auth
     /**
      * @var EntityManagerInterface
      */
-    protected $entityManager;
+    protected EntityManagerInterface $entityManager;
 
     /**
      * Auth constructor.
@@ -33,13 +33,23 @@ class Auth
         $this->entityManager = $entityManager;
     }
 
-    public function generateJWT($data = array()){
+	/**
+	 * @param $data
+	 * @return string
+	 */
+	public function generateJWT($data = array()): string
+	{
         $tokenData = $this->config->get(array('jwt','payload'));
         $tokenData["data"] = $data;
         return JWT::encode($tokenData, $this->config->get(array('jwt','key')),'HS256');
     }
 
-    public function validateJWT($token){
+	/**
+	 * @param $token
+	 * @return bool
+	 */
+	public function validateJWT($token): bool
+	{
 		$table = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user'));
 		$where = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user_auth_key'), 'email');
 		$a = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user_auth_data'), 'email');
@@ -59,7 +69,12 @@ class Auth
         return false;
     }
 
-    public function getUserByJWT($token){
+	/**
+	 * @param $token
+	 * @return mixed
+	 */
+	public function getUserByJWT($token): mixed
+	{
 		$table = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user'));
 		$where = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user_auth_key'), 'email');
 		$a = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user_auth_data'), 'email');

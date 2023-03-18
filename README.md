@@ -1,8 +1,6 @@
 <br />
 <div align="center">
-  <a href="https://github.com/othneildrew/Best-README-Template">
     <img src="https://metapp.hu/github_logo.png" alt="Logo" height="80">
-  </a>
 </div>
 
 ## About Apollo

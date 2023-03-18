@@ -190,4 +190,140 @@ class Language extends ApolloContainer
     {
         return $this->translate[$this->lang];
     }
+
+	/**
+	 * @return string
+	 */
+	public function exportLanguagesToExcel(): string
+	{
+		$allRequiredClassesFound = true;
+		$requiredClassList = array('\PhpOffice\PhpSpreadsheet\Spreadsheet','\PhpOffice\PhpSpreadsheet\Writer\Xlsx','\PhpOffice\PhpSpreadsheet\Writer\Exception');
+		foreach($requiredClassList as $classList){
+			if(!class_exists($classList)){
+				$allRequiredClassesFound = false;
+			}
+		}
+		if($allRequiredClassesFound) {
+			$exportData = $this->convertTranslationsDataToExcel();
+			$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+			$spreadsheet->getActiveSheet()->fromArray($exportData);
+			$writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+			try {
+				$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/translations.xlsx';
+				$writer->save($fileLocation);
+				return 'Your file location is: ' . $fileLocation;
+			} catch (\PhpOffice\PhpSpreadsheet\Writer\Exception $e) {
+				return 'Something went wrong: ' . $e->getMessage();
+			}
+		}else{
+			return 'Some required class missing!';
+		}
+	}
+
+	/**
+	 * @return array
+	 */
+	private function convertTranslationsDataToExcel(): array
+	{
+		$result = array();
+		$translationsArray = $this->translate;
+		$keys = array_keys($translationsArray[array_key_first($translationsArray)]);
+		$result[] = array_merge(array("Rendszer kulcs"), array_keys($translationsArray));
+		foreach ($keys as $key) {
+			$row = array($key);
+			foreach ($translationsArray as $language => $translations) {
+				$row[] = $translations[$key] ?? "";
+			}
+			$result[] = $row;
+		}
+		return $result;
+	}
+
+	/**
+	 * @param $fileLocation
+	 * @return string
+	 */
+	public function importLanguagesFromExcel($fileLocation = null): string
+	{
+		if (class_exists('\PhpOffice\PhpSpreadsheet\IOFactory')) {
+			if ($fileLocation == null) {
+				$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/translations.xlsx';
+			}
+			if (file_exists($fileLocation)) {
+				try {
+					$spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($fileLocation);
+					$sheet = $spreadsheet->getSheet($spreadsheet->getFirstSheetIndex());
+					$data = $this->eliminateNullValues($sheet->toArray());
+					$result = $this->convertExcelDataToTranslationsFile($data);
+					if ($result) {
+						return 'Files successfully created!';
+					} else {
+						return 'Something went wrong while importing the files, please check excel structure and data!';
+					}
+				} catch (Exception $e) {
+					return 'Something went wrong: ' . $e->getMessage();
+				}
+			} else {
+				return 'The xlsx file doesn\'t exist!';
+			}
+		} else {
+			return 'Some required class missing!';
+		}
+	}
+
+	/**
+	 * @param $data
+	 * @return mixed
+	 */
+	private function eliminateNullValues($data): mixed
+	{
+		foreach ($data as $key => &$row) {
+			$row = array_filter($row, function ($cell) {
+				return !is_null($cell);
+			});
+			if (count($row) == 0) {
+				unset($data[$key]);
+			}
+		}
+		unset ($row);
+		return $data;
+	}
+
+	/**
+	 * @param $data
+	 * @return bool
+	 */
+	private function convertExcelDataToTranslationsFile($data): bool
+	{
+		$convertedDataWithoutHeaders = array_slice($data, 1);
+		$convertedData = array();
+		foreach ($convertedDataWithoutHeaders as $row) {
+			$key = $row[0];
+			for ($i = 1; $i < count($row); $i++) {
+				$language = $data[0][$i];
+				$value = $row[$i];
+				if (!isset($convertedData[$language])) {
+					$convertedData[$language] = array();
+				}
+				$convertedData[$language][$key] = $value;
+			}
+		}
+		return $this->saveConvertedExcelDataToTranslationFiles($convertedData);
+	}
+
+	/**
+	 * @param $convertedData
+	 * @return bool
+	 */
+	private function saveConvertedExcelDataToTranslationFiles($convertedData): bool
+	{
+		$filesCreated = true;
+		$folderLocation = $_SERVER["DOCUMENT_ROOT"].'/config/translations';
+		foreach($convertedData as $language => $data){
+			if(file_put_contents($folderLocation.'/'.$language.'.php',"<?php \n\n return " . var_export($data, true) . ";") == false){
+				$filesCreated = false;
+			}
+		}
+		return $filesCreated;
+	}
 }

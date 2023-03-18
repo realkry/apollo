@@ -13,105 +13,110 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class AuthMiddleware implements MiddlewareInterface
 {
-    /**
-     * @var array
-     */
-    protected $options;
+	/**
+	 * @var array
+	 */
+	protected array $options;
 
-    /**
-     * @var Auth
-     */
-    protected $auth;
+	/**
+	 * @var Auth
+	 */
+	protected Auth $auth;
 
-    /**
-     * @var Config
-     */
-    protected $config;
+	/**
+	 * @var Config
+	 */
+	protected Config $config;
 
-    /**
-     * @var EntityManagerInterface
-     */
-    protected $entityManager;
+	/**
+	 * @var EntityManagerInterface
+	 */
+	protected EntityManagerInterface $entityManager;
 
 
-    public function __construct($options, EntityManagerInterface $em, Config $config)
-    {
-        $this->options = $options;
-        $this->auth = new Auth($em,$config);
-        $this->config = $config;
-        $this->entityManager = $em;
-    }
+	public function __construct($options, EntityManagerInterface $em, Config $config)
+	{
+		$this->options = $options;
+		$this->auth = new Auth($em, $config);
+		$this->config = $config;
+		$this->entityManager = $em;
+	}
 
-    /**
-     * {@inheritdoc}
-     */
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
-    {
-        $valid = false;
-        if ($this->options["auth_method"] == Auth::JWT) {
-            if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-                if (preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
-                    $jwt = $matches[1];
-                    if ($jwt) {
-                        if ($this->auth->validateJWT($jwt)) {
-                            $valid = true;
-                        }
-                    }
-                }
-            }
-        }
+	/**
+	 * {@inheritdoc}
+	 */
+	public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+	{
+		$valid = false;
+		if ($this->options["auth_method"] == Auth::JWT) {
+			if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+				if (preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+					$jwt = $matches[1];
+					if ($jwt) {
+						if ($this->auth->validateJWT($jwt)) {
+							$valid = true;
+						}
+					}
+				}
+			}
+		}
 
-        if ($this->options["auth_method"] == Auth::Cookie) {
-			if(isset($_COOKIE["auth_token"])){
+		if ($this->options["auth_method"] == Auth::Cookie) {
+			if (isset($_COOKIE["auth_token"])) {
 				$jwt = $_COOKIE["auth_token"];
 				if ($jwt) {
 					if ($this->auth->validateJWT($jwt)) {
 						$valid = true;
-					}else{
+					} else {
 						setcookie('auth_token', null, time() - 3600);
 					}
 				}
-            }
-        }
+			}
+		}
 
-        if ($this->options["auth_method"] == Auth::Session) {
-         $sessionRep = $this->config->get(array('route', 'modules', 'Session', 'entity', 'session'));
-            $sessionRepository = $this->entityManager->getRepository($sessionRep);
-            try {
-                $sessionRepository->removeExpired();
-            }catch (\Exception $e){
-            }
-            if (!empty($_SESSION[$this->config->get(array('route', 'modules', 'Session', 'session_key'), 'user')])) {
-                $session = $sessionRepository->findOneBy(array($this->config->get(array('route', 'modules', 'Session', 'entity', 'session_key'), 'userid') => $_SESSION[$this->config->get(array('route', 'modules', 'Session', 'session_key'), 'user')], 'sessionid' => session_id()));
-                if ($session) {
-                    $getter = "get".ucfirst($this->config->get(array('route', 'modules', 'Session', 'entity', 'session_key'), 'userid'));
-                    $sessionUser = $session->$getter();
-                    if ($sessionUser) {
-                        if ($this->password_match($sessionUser, $session)) {
-                            $valid = true;
-                        } else {
-                            $this->entityManager->remove($session);
-                            $this->entityManager->flush();
-                        }
-                    }
-                }
-            }
-            if (!$valid) {
-                unset($_SESSION[$this->config->get(array('route', 'modules', 'Session', 'session_key'), 'user')]);
-                session_destroy();
-            }
-        }
+		if ($this->options["auth_method"] == Auth::Session) {
+			$sessionRep = $this->config->get(array('route', 'modules', 'Session', 'entity', 'session'));
+			$sessionRepository = $this->entityManager->getRepository($sessionRep);
+			try {
+				$sessionRepository->removeExpired();
+			} catch (\Exception $e) {
+			}
+			if (!empty($_SESSION[$this->config->get(array('route', 'modules', 'Session', 'session_key'), 'user')])) {
+				$session = $sessionRepository->findOneBy(array($this->config->get(array('route', 'modules', 'Session', 'entity', 'session_key'), 'userid') => $_SESSION[$this->config->get(array('route', 'modules', 'Session', 'session_key'), 'user')], 'sessionid' => session_id()));
+				if ($session) {
+					$getter = "get" . ucfirst($this->config->get(array('route', 'modules', 'Session', 'entity', 'session_key'), 'userid'));
+					$sessionUser = $session->$getter();
+					if ($sessionUser) {
+						if ($this->password_match($sessionUser, $session)) {
+							$valid = true;
+						} else {
+							$this->entityManager->remove($session);
+							$this->entityManager->flush();
+						}
+					}
+				}
+			}
+			if (!$valid) {
+				unset($_SESSION[$this->config->get(array('route', 'modules', 'Session', 'session_key'), 'user')]);
+				session_destroy();
+			}
+		}
 
-        if($valid){
-            return $handler->handle($request);
-        }
-        throw new UnauthorizedException();
-    }
+		if ($valid) {
+			return $handler->handle($request);
+		}
+		throw new UnauthorizedException();
+	}
 
-    protected function password_match($sessionUser, $session)
-    {
-        $sessionRep = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user'));
-        $userEntity = $this->entityManager->getRepository($sessionRep)->findOneBy(array('id'=>$sessionUser->getId()));
-        return hash_equals($userEntity->getPassword(), $session->getHash());
-    }
+	/**
+	 * @param $sessionUser
+	 * @param $session
+	 * @return bool
+	 */
+	protected function password_match($sessionUser, $session): bool
+	{
+		$sessionRep = $this->config->get(array('route', 'modules', 'Session', 'entity', 'user'));
+		$userEntity = $this->entityManager->getRepository($sessionRep)->findOneBy(array('id' => $sessionUser->getId()));
+		return hash_equals($userEntity->getPassword(), $session->getHash());
+	}
 }
