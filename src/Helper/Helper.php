@@ -60,6 +60,7 @@ class Helper implements LoggerHelperInterface
         $this->entityManager = $entityManager;
         $this->auth = $auth;
         $this->basepath = $config->get(array('routing','basepath'), '/');
+        $this->auth_method = $config->get(array('routing','auth_method'), null);
         $this->config = $config->fromDimension(array('route','modules'));
         $this->setLogDebug($this->config->get('debug', false));
         if ($logger) {
@@ -74,39 +75,40 @@ class Helper implements LoggerHelperInterface
      */
     public function getSessionUser()
     {
-        if (!empty($_SESSION[$this->session_key])) {
-            $sessionRepository = $this->entityManager->getRepository($this->config->get(array('Session', 'entity', 'session')));
-            $session = $sessionRepository->findOneBy(array($this->config->get(array('Session', 'entity', 'session_key'), 'userid') => $_SESSION[$this->session_key], 'sessionid' => session_id()));
-            if ($session) {
-                $getter = "get".ucfirst($this->config->get(array('Session', 'entity', 'session_key'), 'userid'));
-                return $session->$getter();
-            }
-        }else{
-            if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-                if (preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
-                    $jwt = $matches[1];
-                    if ($jwt) {
-                        $user = $this->auth->getUserByJWT($jwt);
-                        if (is_object($user)) {
-                            return $user;
-                        }
-                    }
-                }
-            }else{
-				if(isset($_COOKIE["auth_token"])){
-					$jwt = $_COOKIE["auth_token"];
-					if ($jwt) {
-						$user = $this->auth->getUserByJWT($jwt);
-						if (is_object($user)) {
-							return $user;
-						}else{
-							setcookie('auth_token', null, time() - 3600);
+		$user = false;
+		switch ($this->auth_method){
+			case Auth::Session:
+				if (!empty($_SESSION[$this->session_key])) {
+					$sessionRepository = $this->entityManager->getRepository($this->config->get(array('Session', 'entity', 'session')));
+					$session = $sessionRepository->findOneBy(array($this->config->get(array('Session', 'entity', 'session_key'), 'userid') => $_SESSION[$this->session_key], 'sessionid' => session_id()));
+					if ($session) {
+						$getter = "get" . ucfirst($this->config->get(array('Session', 'entity', 'session_key'), 'userid'));
+						$user = $session->$getter();
+					}
+				}
+			case Auth::JWT:
+				if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+					if (preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+						$jwt = $matches[1];
+						if ($jwt) {
+							$userByJWT = $this->auth->getUserByJWT($jwt);
+							if (is_object($userByJWT)) {
+								$user = $userByJWT;
+							}
 						}
 					}
 				}
-			}
-        }
-        return false;
+			case Auth::Cookie:
+				if(isset($_COOKIE["auth_token"])){
+					$userByJWT = $this->auth->getUserByJWT($_COOKIE["auth_token"]);
+					if (is_object($userByJWT)) {
+						$user = $userByJWT;
+					}else{
+						setcookie('auth_token', null, time() - 3600);
+					}
+				}
+		}
+        return $user;
     }
 
     /**

@@ -75,7 +75,7 @@ class AuthMiddleware implements MiddlewareInterface
         }
 
         if ($this->options["auth_method"] == Auth::Session) {
-            $sessionRep = $this->config->get(array('route', 'modules', 'Session', 'entity', 'session_repository'));
+         $sessionRep = $this->config->get(array('route', 'modules', 'Session', 'entity', 'session'));
             $sessionRepository = $this->entityManager->getRepository($sessionRep);
             try {
                 $sessionRepository->removeExpired();

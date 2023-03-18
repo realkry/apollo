@@ -32,8 +32,8 @@ class Language extends ApolloContainer
                 $this->languages[] = str_replace(".php", "", $lang);
             }
         }
-        $this->default_language = $config->get(array('route', 'translator', 'default'), 'en');
-        $this->lang = self::parseLang($config);
+        $this->default_language = $config->get(array('route', 'translator', 'default'), 'hu');
+        $this->lang = self::parseLang($config,$helper->getBasepath());
         foreach($this->languages as $lang) {
             $this->translate[$lang] = include($config->get(array('route', 'translator', 'path'), null).'/'.$lang.'.php');
         }
@@ -41,7 +41,7 @@ class Language extends ApolloContainer
         $twig->addGlobal('__lang_urls', $this->getUrls());
         $twig->addGlobal('__languages', $this->languages);
         $twig->addGlobal('__global_translations', $this->translate[$this->lang]);
-        setcookie('default_language',$this->lang,strtotime('+365 days'));
+        setcookie('default_language',$this->lang,strtotime('+365 days'),'/');
 
         parent::__construct($config, $twig, $entityManager, $helper, $auth, $logger);
     }
@@ -50,7 +50,7 @@ class Language extends ApolloContainer
      * @param Config $config
      * @return string
      */
-    public static function parseLang(Config $config)
+    public static function parseLang(Config $config,$basePath = null)
     {
         $languages = array();
         foreach (array_diff(scandir($config->get(array('route','translator', 'path'), '')),array('.', '..')) as $lang) {
@@ -66,6 +66,16 @@ class Language extends ApolloContainer
         }
 
         $params = $_GET;
+
+		if($basePath != null) {
+			if ($basePath != '/') {
+				if (substr_count($params["request"], '/') >= 1) {
+					$lang = explode('/',$params["request"])[1];
+					$params["language"] = $lang;
+				}
+			}
+		}
+
         if(isset($params["language"])){
             if(in_array($params["request"],$languages)){
                 return $params["request"];
@@ -82,10 +92,10 @@ class Language extends ApolloContainer
                     return $_COOKIE["default_language"];
                 }
             }
-            $headerLang = (isset($_SERVER["HTTP_CONTENT_LANGUAGE"]) ? $_SERVER["HTTP_CONTENT_LANGUAGE"] : $config->get(array('route','translator','default'), 'en'));
-            return in_array($lng, $languages) ? $lng : (!empty($headerLang) ? (in_array($headerLang,$languages) ? $headerLang : $config->get(array('route','translator','default'), 'en')) : $config->get(array('route','translator','default'), 'en'));
+            $headerLang = (isset($_SERVER["HTTP_CONTENT_LANGUAGE"]) ? $_SERVER["HTTP_CONTENT_LANGUAGE"] : $config->get(array('route','translator','default'), 'hu'));
+            return in_array($lng, $languages) ? $lng : (!empty($headerLang) ? (in_array($headerLang,$languages) ? $headerLang : $config->get(array('route','translator','default'), 'hu')) : $config->get(array('route','translator','default'), 'hu'));
         } else {
-            return $config->get(array('route','translator','default'), 'en');
+            return $config->get(array('route','translator','default'), 'hu');
         }
     }
 
@@ -171,5 +181,13 @@ class Language extends ApolloContainer
     public function getLanguages()
     {
         return $this->languages;
+    }
+
+    /**
+     * @return array|null
+     */
+    public function getTranslations()
+    {
+        return $this->translate[$this->lang];
     }
 }
