@@ -1,4 +1,5 @@
 <?php
+
 namespace Metapp\Apollo\Language;
 
 
@@ -15,181 +16,181 @@ use Twig\Environment;
 
 class Language extends ApolloContainer
 {
-    protected $languages;
-    private $default_language;
-    protected $lang;
-    protected $translate = array();
-    protected static $NAME;
-    protected static $URLS = array();
-    protected $request;
+	protected $languages;
+	private $default_language;
+	protected $lang;
+	protected $translate = array();
+	protected static $NAME;
+	protected static $URLS = array();
+	protected $request;
 
-    public function __construct(Config $config, Environment $twig, EntityManagerInterface $entityManager, Helper $helper, ServerRequestInterface $request, Auth $auth, LoggerInterface $logger = null)
-    {
-        $this->request = $request;
-        $this->languages = array();
-        foreach (array_diff(scandir($config->get(array('route', 'translator', 'path'), '')),array('.', '..')) as $lang) {
-            if (strpos($lang, '.php') !== false) {
-                $this->languages[] = str_replace(".php", "", $lang);
-            }
-        }
-        $this->default_language = $config->get(array('route', 'translator', 'default'), 'hu');
-        $this->lang = self::parseLang($config,$helper->getBasepath());
-        foreach($this->languages as $lang) {
-            $this->translate[$lang] = include($config->get(array('route', 'translator', 'path'), null).'/'.$lang.'.php');
-        }
-        $twig->addGlobal('__lang', $this->lang);
-        $twig->addGlobal('__lang_urls', $this->getUrls());
-        $twig->addGlobal('__languages', $this->languages);
-        $twig->addGlobal('__global_translations', $this->translate[$this->lang]);
-        setcookie('default_language',$this->lang,strtotime('+365 days'),'/');
+	public function __construct(Config $config, Environment $twig, EntityManagerInterface $entityManager, Helper $helper, ServerRequestInterface $request, Auth $auth, LoggerInterface $logger = null)
+	{
+		$this->request = $request;
+		$this->languages = array();
+		foreach (array_diff(scandir($config->get(array('route', 'translator', 'path'), '')), array('.', '..')) as $lang) {
+			if (strpos($lang, '.php') !== false) {
+				$this->languages[] = str_replace(".php", "", $lang);
+			}
+		}
+		$this->default_language = $config->get(array('route', 'translator', 'default'), 'hu');
+		$this->lang = self::parseLang($config, $helper->getBasepath());
+		foreach ($this->languages as $lang) {
+			$this->translate[$lang] = include($config->get(array('route', 'translator', 'path'), null) . '/' . $lang . '.php');
+		}
+		$twig->addGlobal('__lang', $this->lang);
+		$twig->addGlobal('__lang_urls', $this->getUrls());
+		$twig->addGlobal('__languages', $this->languages);
+		$twig->addGlobal('__global_translations', $this->translate[$this->lang]);
+		setcookie('default_language', $this->lang, strtotime('+365 days'), '/');
 
-        parent::__construct($config, $twig, $entityManager, $helper, $auth, $logger);
-    }
+		parent::__construct($config, $twig, $entityManager, $helper, $auth, $logger);
+	}
 
-    /**
-     * @param Config $config
-     * @return string
-     */
-    public static function parseLang(Config $config,$basePath = null)
-    {
-        $languages = array();
-        foreach (array_diff(scandir($config->get(array('route','translator', 'path'), '')),array('.', '..')) as $lang) {
-            $languages[] = str_replace(".php","",$lang);
-        }
+	/**
+	 * @param Config $config
+	 * @return string
+	 */
+	public static function parseLang(Config $config, $basePath = null)
+	{
+		$languages = array();
+		foreach (array_diff(scandir($config->get(array('route', 'translator', 'path'), '')), array('.', '..')) as $lang) {
+			$languages[] = str_replace(".php", "", $lang);
+		}
 
-        if(isset($_SERVER["HTTP_CONTENT_LANGUAGE"])){
-            if(!empty($_SERVER["HTTP_CONTENT_LANGUAGE"])){
-                if(in_array($_SERVER["HTTP_CONTENT_LANGUAGE"], $languages)) {
-                    return $_SERVER["HTTP_CONTENT_LANGUAGE"];
-                }
-            }
-        }
+		if (isset($_SERVER["HTTP_CONTENT_LANGUAGE"])) {
+			if (!empty($_SERVER["HTTP_CONTENT_LANGUAGE"])) {
+				if (in_array($_SERVER["HTTP_CONTENT_LANGUAGE"], $languages)) {
+					return $_SERVER["HTTP_CONTENT_LANGUAGE"];
+				}
+			}
+		}
 
-        $params = $_GET;
+		$params = $_GET;
 
-		if($basePath != null) {
+		if ($basePath != null) {
 			if ($basePath != '/') {
 				if (substr_count($params["request"], '/') >= 1) {
-					$lang = explode('/',$params["request"])[1];
+					$lang = explode('/', $params["request"])[1];
 					$params["language"] = $lang;
 				}
 			}
 		}
 
-        if(isset($params["language"])){
-            if(in_array($params["request"],$languages)){
-                return $params["request"];
-            }
-            if(in_array($params["language"],$languages)){
-                return $params["language"];
-            }
-        }
-        if (array_key_exists('request', $params)) {
-            $tmp = explode('/', $params['request']);
-            $lng = array_shift($tmp);
-            if (strpos($params["request"], 'api/') === false) {
-                if(isset($_COOKIE["default_language"])){
-                    return $_COOKIE["default_language"];
-                }
-            }
-            $headerLang = (isset($_SERVER["HTTP_CONTENT_LANGUAGE"]) ? $_SERVER["HTTP_CONTENT_LANGUAGE"] : $config->get(array('route','translator','default'), 'hu'));
-            return in_array($lng, $languages) ? $lng : (!empty($headerLang) ? (in_array($headerLang,$languages) ? $headerLang : $config->get(array('route','translator','default'), 'hu')) : $config->get(array('route','translator','default'), 'hu'));
-        } else {
-            return $config->get(array('route','translator','default'), 'hu');
-        }
-    }
+		if (isset($params["language"])) {
+			if (in_array($params["request"], $languages)) {
+				return $params["request"];
+			}
+			if (in_array($params["language"], $languages)) {
+				return $params["language"];
+			}
+		}
+		if (array_key_exists('request', $params)) {
+			$tmp = explode('/', $params['request']);
+			$lng = array_shift($tmp);
+			if (strpos($params["request"], 'api/') === false) {
+				if (isset($_COOKIE["default_language"])) {
+					return $_COOKIE["default_language"];
+				}
+			}
+			$headerLang = (isset($_SERVER["HTTP_CONTENT_LANGUAGE"]) ? $_SERVER["HTTP_CONTENT_LANGUAGE"] : $config->get(array('route', 'translator', 'default'), 'hu'));
+			return in_array($lng, $languages) ? $lng : (!empty($headerLang) ? (in_array($headerLang, $languages) ? $headerLang : $config->get(array('route', 'translator', 'default'), 'hu')) : $config->get(array('route', 'translator', 'default'), 'hu'));
+		} else {
+			return $config->get(array('route', 'translator', 'default'), 'hu');
+		}
+	}
 
-    /**
-     * @return string
-     */
-    public static function getURL()
-    {
-        return static::$URL;
-    }
+	/**
+	 * @return string
+	 */
+	public static function getURL()
+	{
+		return static::$URL;
+	}
 
-    /**
-     * @param $key
-     * @param string $lang
-     * @return mixed
-     */
-    public function trans($key, $lang = '')
-    {
-        if (!$lang) {
-            $lang = $this->lang;
-        }
-        $text = '';
-        if (isset($this->translate[$lang][$key])) {
-            $text = $this->translate[$lang][$key];
-        }else{
-            if(isset($this->translate[$this->default_language][$key])) {
-                $text = $this->translate[$this->default_language][$key];
-            }else{
-                $text = '--{'.$key.'}--';
-            }
-        }
-        return $text;
-    }
+	/**
+	 * @param $key
+	 * @param string $lang
+	 * @return mixed
+	 */
+	public function trans($key, $lang = '')
+	{
+		if (!$lang) {
+			$lang = $this->lang;
+		}
+		$text = '';
+		if (isset($this->translate[$lang][$key])) {
+			$text = $this->translate[$lang][$key];
+		} else {
+			if (isset($this->translate[$this->default_language][$key])) {
+				$text = $this->translate[$this->default_language][$key];
+			} else {
+				$text = '--{' . $key . '}--';
+			}
+		}
+		return $text;
+	}
 
-    public function search($term, $lang = '')
-    {
-        if (!$lang) {
-            $lang = $this->lang;
-        }
-        foreach ($this->translate[$lang] as $txt) {
-            if (is_string($txt)) {
-                if (mb_stripos($txt, $term) !== false) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+	public function search($term, $lang = '')
+	{
+		if (!$lang) {
+			$lang = $this->lang;
+		}
+		foreach ($this->translate[$lang] as $txt) {
+			if (is_string($txt)) {
+				if (mb_stripos($txt, $term) !== false) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
-    /**
-     * @return array
-     */
-    public function getUrls()
-    {
-        return static::$URLS;
-    }
+	/**
+	 * @return array
+	 */
+	public function getUrls()
+	{
+		return static::$URLS;
+	}
 
-    /**
-     * @param $class
-     * @param ServerRequestInterface $request
-     * @return self
-     */
-    protected function loadMultiModule($class, ServerRequestInterface $request = null)
-    {
-        try {
-            $reflector = new ReflectionClass($class);
-        } catch (Exception $exception) {
-            return null;
-        }
-        if (in_array(LanguageModulesInterface::class, $reflector->getInterfaceNames())) {
-            if (!$request) {
-                $request = $this->request;
-            }
-            $config = new Config(array('route' => $this->config->toArray()));
-            return new $class($config, $this->twig, $this->entityManager, $this->helper, $request, $this->logger, true);
-        }
-        return null;
-    }
-	
-    /**
-     * @return array|string|null
-     */
-    public function getLanguages()
-    {
-        return $this->languages;
-    }
+	/**
+	 * @param $class
+	 * @param ServerRequestInterface $request
+	 * @return self
+	 */
+	protected function loadMultiModule($class, ServerRequestInterface $request = null)
+	{
+		try {
+			$reflector = new ReflectionClass($class);
+		} catch (Exception $exception) {
+			return null;
+		}
+		if (in_array(LanguageModulesInterface::class, $reflector->getInterfaceNames())) {
+			if (!$request) {
+				$request = $this->request;
+			}
+			$config = new Config(array('route' => $this->config->toArray()));
+			return new $class($config, $this->twig, $this->entityManager, $this->helper, $request, $this->logger, true);
+		}
+		return null;
+	}
 
-    /**
-     * @return array|null
-     */
-    public function getTranslations()
-    {
-        return $this->translate[$this->lang];
-    }
+	/**
+	 * @return array|string|null
+	 */
+	public function getLanguages()
+	{
+		return $this->languages;
+	}
+
+	/**
+	 * @return array|null
+	 */
+	public function getTranslations()
+	{
+		return $this->translate[$this->lang];
+	}
 
 	/**
 	 * @return string
@@ -197,13 +198,13 @@ class Language extends ApolloContainer
 	public function exportLanguagesToExcel(): string
 	{
 		$allRequiredClassesFound = true;
-		$requiredClassList = array('\PhpOffice\PhpSpreadsheet\Spreadsheet','\PhpOffice\PhpSpreadsheet\Writer\Xlsx','\PhpOffice\PhpSpreadsheet\Writer\Exception');
-		foreach($requiredClassList as $classList){
-			if(!class_exists($classList)){
+		$requiredClassList = array('\PhpOffice\PhpSpreadsheet\Spreadsheet', '\PhpOffice\PhpSpreadsheet\Writer\Xlsx', '\PhpOffice\PhpSpreadsheet\Writer\Exception');
+		foreach ($requiredClassList as $classList) {
+			if (!class_exists($classList)) {
 				$allRequiredClassesFound = false;
 			}
 		}
-		if($allRequiredClassesFound) {
+		if ($allRequiredClassesFound) {
 			$exportData = $this->convertTranslationsDataToExcel();
 			$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
 			$spreadsheet->getActiveSheet()->fromArray($exportData);
@@ -215,7 +216,7 @@ class Language extends ApolloContainer
 			} catch (\PhpOffice\PhpSpreadsheet\Writer\Exception $e) {
 				return 'Something went wrong: ' . $e->getMessage();
 			}
-		}else{
+		} else {
 			return 'Some required class missing!';
 		}
 	}
@@ -318,9 +319,9 @@ class Language extends ApolloContainer
 	private function saveConvertedExcelDataToTranslationFiles($convertedData): bool
 	{
 		$filesCreated = true;
-		$folderLocation = $_SERVER["DOCUMENT_ROOT"].'/config/translations';
-		foreach($convertedData as $language => $data){
-			if(file_put_contents($folderLocation.'/'.$language.'.php',"<?php \n\n return " . var_export($data, true) . ";") == false){
+		$folderLocation = $_SERVER["DOCUMENT_ROOT"] . '/config/translations';
+		foreach ($convertedData as $language => $data) {
+			if (file_put_contents($folderLocation . '/' . $language . '.php', "<?php \n\n return " . var_export($data, true) . ";") == false) {
 				$filesCreated = false;
 			}
 		}
