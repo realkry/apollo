@@ -17,12 +17,15 @@ use Twig\Environment;
 class Language extends ApolloContainer
 {
 	protected $languages;
+	protected $app_languages = array();
 	private $default_language;
 	protected $lang;
 	protected $translate = array();
+	protected $app_translate = array();
 	protected static $NAME;
 	protected static $URLS = array();
 	protected $request;
+	protected string|null $app_language_version = null;
 
 	public function __construct(Config $config, Environment $twig, EntityManagerInterface $entityManager, Helper $helper, ServerRequestInterface $request, Auth $auth, LoggerInterface $logger = null)
 	{
@@ -33,6 +36,17 @@ class Language extends ApolloContainer
 				$this->languages[] = str_replace(".php", "", $lang);
 			}
 		}
+
+		$this->app_languages = array();
+		foreach (array_diff(scandir($config->get(array('route', 'translator', 'appPath'), '')), array('.', '..')) as $lang) {
+			if (strpos($lang, '.php') !== false) {
+				$this->app_languages[] = str_replace(".php", "", $lang);
+				$this->app_translate[$lang] = include($config->get(array('route', 'translator', 'appPath'), null) . '/' . $lang . '.php');
+			}
+		}
+
+		$this->app_language_version = $config->get(array('route', 'translator', 'version'), null);
+
 		$this->default_language = $config->get(array('route', 'translator', 'default'), 'hu');
 		$this->lang = self::parseLang($config, $helper->getBasepath());
 		foreach ($this->languages as $lang) {
@@ -106,6 +120,14 @@ class Language extends ApolloContainer
 	public static function getURL()
 	{
 		return static::$URL;
+	}
+
+	/**
+	 * @return string|null
+	 */
+	public function getAppLanguageVersion(): string|null
+	{
+		return $this->app_language_version;
 	}
 
 	/**
@@ -193,9 +215,10 @@ class Language extends ApolloContainer
 	}
 
 	/**
-	 * @return string
+	 * @param bool    $isAppTranslations Optional. Generate normal version of translations, or one for application. Defaults to `false`.
+	 * @return string Returns the path of generated file, if error found returns the error message.
 	 */
-	public function exportLanguagesToExcel(): string
+	public function exportLanguagesToExcel(bool $isAppTranslations = false): string
 	{
 		$allRequiredClassesFound = true;
 		$requiredClassList = array('\PhpOffice\PhpSpreadsheet\Spreadsheet', '\PhpOffice\PhpSpreadsheet\Writer\Xlsx', '\PhpOffice\PhpSpreadsheet\Writer\Exception');
@@ -205,12 +228,15 @@ class Language extends ApolloContainer
 			}
 		}
 		if ($allRequiredClassesFound) {
-			$exportData = $this->convertTranslationsDataToExcel();
+			$exportData = $this->convertTranslationsDataToExcel($isAppTranslations);
 			$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
 			$spreadsheet->getActiveSheet()->fromArray($exportData);
 			$writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
 			try {
 				$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/translations.xlsx';
+				if ($isAppTranslations){
+					$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/app_translations.xlsx';
+				}
 				$writer->save($fileLocation);
 				return 'Your file location is: ' . $fileLocation;
 			} catch (\PhpOffice\PhpSpreadsheet\Writer\Exception $e) {
@@ -222,12 +248,31 @@ class Language extends ApolloContainer
 	}
 
 	/**
+	 * @return string Returns status of the generation.
+	 */
+	public function exportAppLanguagesToJSON(): string
+	{
+		foreach ($this->app_translate as $key => $lang){
+			$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/'.$key.'.json';
+			try {
+				file_put_contents($fileLocation, json_encode($lang));
+			}catch (\Exception $e){
+				return 'Something went wrong: ' . $e->getMessage();
+			}
+		}
+		return 'Files successfully created!';
+	}
+
+	/**
 	 * @return array
 	 */
-	private function convertTranslationsDataToExcel(): array
+	private function convertTranslationsDataToExcel(bool $isAppTranslations): array
 	{
 		$result = array();
 		$translationsArray = $this->translate;
+		if ($isAppTranslations){
+			$translationsArray = $this->app_translate;
+		}
 		$keys = array_keys($translationsArray[array_key_first($translationsArray)]);
 		$result[] = array_merge(array("Rendszer kulcs"), array_keys($translationsArray));
 		foreach ($keys as $key) {
@@ -241,21 +286,25 @@ class Language extends ApolloContainer
 	}
 
 	/**
-	 * @param $fileLocation
+	 * @param bool    $isAppTranslations Optional. Import normal version of translations, or one for application. Defaults to `false`.
+	 * @param string  $fileLocation Optional. Location of import file. Defaults to `DOCUMENT_ROOT/translations.xlsx` when isAppTranslations is true defaults to `DOCUMENT_ROOT/app_translations.xlsx`.
 	 * @return string
 	 */
-	public function importLanguagesFromExcel($fileLocation = null): string
+	public function importLanguagesFromExcel(bool $isAppTranslations = false, $fileLocation = null): string
 	{
 		if (class_exists('\PhpOffice\PhpSpreadsheet\IOFactory')) {
 			if ($fileLocation == null) {
 				$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/translations.xlsx';
+				if ($isAppTranslations){
+					$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/app_translations.xlsx';
+				}
 			}
 			if (file_exists($fileLocation)) {
 				try {
 					$spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($fileLocation);
 					$sheet = $spreadsheet->getSheet($spreadsheet->getFirstSheetIndex());
 					$data = $this->eliminateNullValues($sheet->toArray());
-					$result = $this->convertExcelDataToTranslationsFile($data);
+					$result = $this->convertExcelDataToTranslationsFile($data, $isAppTranslations);
 					if ($result) {
 						return 'Files successfully created!';
 					} else {
@@ -294,7 +343,7 @@ class Language extends ApolloContainer
 	 * @param $data
 	 * @return bool
 	 */
-	private function convertExcelDataToTranslationsFile($data): bool
+	private function convertExcelDataToTranslationsFile($data, bool $isAppTranslations = false): bool
 	{
 		$convertedDataWithoutHeaders = array_slice($data, 1);
 		$convertedData = array();
@@ -309,17 +358,20 @@ class Language extends ApolloContainer
 				$convertedData[$language][$key] = $value;
 			}
 		}
-		return $this->saveConvertedExcelDataToTranslationFiles($convertedData);
+		return $this->saveConvertedExcelDataToTranslationFiles($convertedData, $isAppTranslations);
 	}
 
 	/**
 	 * @param $convertedData
 	 * @return bool
 	 */
-	private function saveConvertedExcelDataToTranslationFiles($convertedData): bool
+	private function saveConvertedExcelDataToTranslationFiles($convertedData, bool $isAppTranslations = false): bool
 	{
 		$filesCreated = true;
 		$folderLocation = $_SERVER["DOCUMENT_ROOT"] . '/config/translations';
+		if ($isAppTranslations){
+			$folderLocation = $_SERVER["DOCUMENT_ROOT"] . '/config/translations/app';
+		}
 		foreach ($convertedData as $language => $data) {
 			if (file_put_contents($folderLocation . '/' . $language . '.php', "<?php \n\n return " . var_export($data, true) . ";") == false) {
 				$filesCreated = false;
