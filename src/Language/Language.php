@@ -37,11 +37,14 @@ class Language extends ApolloContainer
 			}
 		}
 
-		$this->app_languages = array();
-		foreach (array_diff(scandir($config->get(array('route', 'translator', 'appPath'), '')), array('.', '..')) as $lang) {
-			if (strpos($lang, '.php') !== false) {
-				$this->app_languages[] = str_replace(".php", "", $lang);
-				$this->app_translate[$lang] = include($config->get(array('route', 'translator', 'appPath'), null) . '/' . $lang . '.php');
+		if(!empty($config->get(array('route', 'translator', 'appPath'), ''))) {
+			$this->app_languages = array();
+			foreach (array_diff(scandir($config->get(array('route', 'translator', 'appPath'), '')), array('.', '..')) as $lang) {
+				if (strpos($lang, '.php') !== false) {
+					$langCode = str_replace(".php", "", $lang);
+					$this->app_languages[] = $langCode;
+					$this->app_translate[$langCode] = include($config->get(array('route', 'translator', 'appPath'), null) . '/' . $langCode . '.php');
+				}
 			}
 		}
 
