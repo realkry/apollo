@@ -84,6 +84,10 @@ class RouteValidator implements RouteValidatorInterface
             $options['auth_method'] = $requires['auth_method'];
             $map->middleware(new AuthMiddleware($options, $this->entityManager, $this->config));
         }
+		if ($requires['middleware']) {
+			$middlewareClass = $requires["middleware"];
+			$map->middleware(new $middlewareClass($options, $container, $this));
+		}
         if (!empty($requires['required_fields'])) {
             $options['required_fields'] = (array)$requires['required_fields'];
             $map->middleware(new FieldsMiddleware($options, $this->entityManager, $this->config, $container));

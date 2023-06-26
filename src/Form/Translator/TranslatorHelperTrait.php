@@ -1,7 +1,7 @@
 <?php
 namespace Metapp\Apollo\Form\Translator;
 
-use Zend\I18n\Translator\TranslatorInterface;
+use Laminas\I18n\Translator\TranslatorInterface;
 
 trait TranslatorHelperTrait
 {
