@@ -89,6 +89,16 @@ class APIResponseBuilder{
         return $this;
     }
 
+	/**
+	 * @param array $data
+	 * @return APIResponseBuilder
+	 */
+	public function addData($data)
+	{
+		$this->data[] = $data;
+		return $this;
+	}
+
     /**
      * @return string
      */
