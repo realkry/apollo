@@ -18,7 +18,7 @@ class Language extends ApolloContainer
 {
 	protected $languages;
 	protected $app_languages = array();
-	private $default_language;
+	protected $default_language;
 	protected $lang;
 	protected $translate = array();
 	protected $app_translate = array();
