@@ -152,13 +152,14 @@ class Helper implements LoggerHelperInterface
         return $this->basepath;
     }
 
-    /**
-     * @param $url
-     * @return string
-     */
-    public function getRealUrl($url)
-    {
-        $basepath = rtrim($this->basepath, '/');
-        return implode('/', array($basepath, ltrim($url, '/')));
-    }
+
+	/**
+	 * @param $url
+	 * @return string
+	 */
+	public function getRealUrl($url)
+	{
+		$basepath = rtrim($this->basepath, '/');
+		return $url != null ? implode('/', array($basepath, ltrim($url, '/'))) : $basepath;
+	}
 }

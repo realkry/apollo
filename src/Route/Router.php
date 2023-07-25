@@ -198,6 +198,7 @@ class Router extends \League\Route\Router implements LoggerHelperInterface, Conf
                             'required_headers' => array(),
                             'required_ContentType' => '',
                             'require_auth' => false,
+							'middleware' => null,
                             'auth_method' => Auth::Session,
                             'require_permissions' => array(),
                             'required_permission_groups' => array(),
