@@ -59,6 +59,22 @@ class RouteValidator implements RouteValidatorInterface
         $this->auth = $auth;
     }
 
+	/**
+	 * @return Helper
+	 */
+	public function getHelper(): Helper
+	{
+		return $this->helper;
+	}
+
+	/**
+	 * @return EntityManagerInterface
+	 */
+	public function getEntityManager(): EntityManagerInterface
+	{
+		return $this->entityManager;
+	}
+
     /**
      * @param Route $map
      * @param array $requires
