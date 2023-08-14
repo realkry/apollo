@@ -164,6 +164,7 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
                         'user' => $pdoConfig->get(array('db','db_user')),
                         'dbname' => $pdoConfig->get(array('db','dsn','dbname')),
                         'password' => $pdoConfig->get(array('db','db_pass')),
+						'charset' => $pdoConfig->get(array('db','dsn','charset')),
                     )
                 );
             }
