@@ -103,7 +103,7 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
                         $params = array(
                             'title' => $response->getStatusCode(),
                             'block' => array(
-                                'title' => $response->getReasonPhrase(),
+                                'title' => $exception->getMessage(),
                                 'content' => json_decode(strtok("\n"), true),
                             ),
                         );

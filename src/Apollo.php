@@ -187,6 +187,12 @@ class Apollo
                         if (strpos($item, $findUrlBasepath . '_rout') === false) {
                             unset($array[$itemKey]);
                         }
+                        if(str_contains($item, '_rout')){
+                            $basePathLength = strlen($findUrlBasepath);
+                            if(substr($item, 0, $basePathLength) != $findUrlBasepath){
+                                unset($array[$itemKey]);
+                            }
+                        }
                     }
                 }else{
                     if(strpos($item,'_rout') !== false){

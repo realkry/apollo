@@ -20,28 +20,30 @@ class Form extends \Laminas\Form\Form implements TranslatorAwareInterface, Trans
 
     public function __construct($name = null, $options = [])
     {
+//        print_r($_GET);
         parent::__construct($name, $options);
         if ($this instanceof TranslatorLoaderInterface) {
             $this->autoLoadTranslator();
         }
         if (!$this->translator instanceof MvcTranslator) {
             $this->setTranslator(new MvcTranslator(Translator::factory(array(
-                    'locale' => $_COOKIE["default_language"],
-                    'translation_file_patterns' => array(
-                        array(
-                            'type' => 'phparray',
-                            'base_dir' => BASE_DIR. "/config/translations",
-                            'pattern' => '%s.php',
-                        ),
+                'locale' => self::getLanguageFromUrl() ?? $_COOKIE["default_language"],
+                'translation_file_patterns' => array(
+                    array(
+                        'type' => 'phparray',
+                        'base_dir' => BASE_DIR . "/config/translations",
+                        'pattern' => '%s.php',
                     ),
+                ),
             ))));
         }
         AbstractValidator::setDefaultTranslator($this->translator);
         AbstractValidator::setDefaultTranslatorTextDomain(static::class);
     }
 
-    public function lang(){
-        return $_COOKIE["default_language"] ?? 'en';
+    public function lang()
+    {
+        return self::getLanguageFromUrl() ?? ($_COOKIE["default_language"] ?? 'en');
     }
 
     public static function generateInputNameErrors($array)
@@ -52,7 +54,7 @@ class Form extends \Laminas\Form\Form implements TranslatorAwareInterface, Trans
             $exp = explode("]", $arrKey);
             $newKey = array_shift($exp);
             array_pop($exp);
-            $newKey = $newKey.implode("]", $exp).(count($exp) > 0 ? "]" : "");
+            $newKey = $newKey . implode("]", $exp) . (count($exp) > 0 ? "]" : "");
             $retArray[$newKey][] = $arrVal;
         }
         return $retArray;
@@ -66,13 +68,35 @@ class Form extends \Laminas\Form\Form implements TranslatorAwareInterface, Trans
     public static function generateInputNameRec($array, $prefix = '')
     {
         $result = array();
-        foreach ($array as $key=>$value) {
+        foreach ($array as $key => $value) {
             if (is_array($value)) {
                 $result = $result + self::generateInputNameRec($value, $prefix . $key . '][');
             } else {
-                $result[$prefix.$key] = $value;
+                $result[$prefix . $key] = $value;
             }
         }
         return $result;
+    }
+
+    public static function getLanguageFromUrl()
+    {
+        $languages = array();
+        $files = scandir($_SERVER["DOCUMENT_ROOT"] . '/config/translations');
+        foreach ($files as $file) {
+            $filePath = $dirPath . '/' . $file;
+            if (is_file($filePath)) {
+                $languages[] = str_replace('.php', '', $filePath);
+            }
+        }
+        $request = $_GET["request"];
+        $exp = explode("/", $request);
+        if ($exp[0] == "admin") {
+            if (in_array($exp[1], $languages)) {
+                return $exp[1];
+            } else {
+                return null;
+            }
+        }
+        return $_GET["language"];
     }
 }
