@@ -38,6 +38,12 @@ class Helper implements LoggerHelperInterface
      * @var string
      */
     protected $basepath;
+
+    /**
+     * @var string
+     */
+    protected $auth_method;
+    
     /**
      * @var string
      */

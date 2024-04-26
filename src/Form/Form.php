@@ -2,7 +2,6 @@
 
 namespace Metapp\Apollo\Form;
 
-
 use Metapp\Apollo\Form\Translator\TranslatorAwareInterface;
 use Metapp\Apollo\Form\Translator\TranslatorAwareTrait;
 use Metapp\Apollo\Form\Translator\TranslatorHelperInterface;
@@ -12,7 +11,6 @@ use Laminas\I18n\Translator\Translator;
 use Laminas\Validator\AbstractValidator;
 use Laminas\Mvc\I18n\Translator as MvcTranslator;
 
-
 class Form extends \Laminas\Form\Form implements TranslatorAwareInterface, TranslatorHelperInterface
 {
     use TranslatorAwareTrait;
@@ -20,7 +18,6 @@ class Form extends \Laminas\Form\Form implements TranslatorAwareInterface, Trans
 
     public function __construct($name = null, $options = [])
     {
-//        print_r($_GET);
         parent::__construct($name, $options);
         if ($this instanceof TranslatorLoaderInterface) {
             $this->autoLoadTranslator();
@@ -81,11 +78,14 @@ class Form extends \Laminas\Form\Form implements TranslatorAwareInterface, Trans
     public static function getLanguageFromUrl()
     {
         $languages = array();
-        $files = scandir($_SERVER["DOCUMENT_ROOT"] . '/config/translations');
+        $dirPath = $_SERVER["DOCUMENT_ROOT"] . '/config/translations';
+        $files = scandir($dirPath);
         foreach ($files as $file) {
-            $filePath = $dirPath . '/' . $file;
-            if (is_file($filePath)) {
-                $languages[] = str_replace('.php', '', $filePath);
+            if($file != "." && $file != "..") {
+                $filePath = $dirPath . '/' . $file;
+                if (is_file($filePath)) {
+                    $languages[] = str_replace('.php', '', $filePath);
+                }
             }
         }
         $request = $_GET["request"];
@@ -97,6 +97,6 @@ class Form extends \Laminas\Form\Form implements TranslatorAwareInterface, Trans
                 return null;
             }
         }
-        return $_GET["language"];
+        return $_GET["language"] ?? 'hu';
     }
 }
