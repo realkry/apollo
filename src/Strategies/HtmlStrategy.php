@@ -55,6 +55,21 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
         }
     }
 
+    public function getContentType(): string
+    {
+        return $this->content_type;
+    }
+
+    public function getTwig(): Environment
+    {
+        return $this->twig;
+    }
+
+    public function getRouter(): Router
+    {
+        return $this->router;
+    }
+
     public function invokeRouteCallable(Route $route, ServerRequestInterface $request): ResponseInterface
     {
         $response = new \Laminas\Diactoros\Response;
@@ -75,15 +90,13 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
 
     public function getThrowableHandler(): MiddlewareInterface
     {
-        return new class ($this->twig, $this->router) implements MiddlewareInterface
+        return new class ($this) implements MiddlewareInterface
         {
-            protected $twig;
-            protected $router;
+            protected $strategy;
 
-            public function __construct(Twig $twig, Router $router)
+            public function __construct(HtmlStrategy $strategy)
             {
-                $this->twig = $twig;
-                $this->router = $router;
+                $this->strategy = $strategy;
             }
 
             public function process(
@@ -107,10 +120,11 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
                                 'content' => json_decode(strtok("\n"), true),
                             ),
                         );
-						$response->getBody()->write($this->twig->render('errors.html.twig',$params));
+						$response->getBody()->write($this->strategy->getTwig()->render('errors.html.twig',$params));
                         return $response;
                     }
 
+                    $this->strategy->error('FatalError',(array)$exception->getMessage());
                     $response = $response->withStatus(500);
                     $params = array(
                         'title' => $response->getStatusCode(),
@@ -120,7 +134,7 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
                             'trace' => $exception->getTraceAsString(),
                         ),
                     );
-                    $response->getBody()->write($this->twig->render('errors.html.twig',$params));
+                    $response->getBody()->write($this->strategy->getTwig()->render('errors.html.twig',$params));
                     return $response;
                 }
             }
@@ -133,13 +147,14 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
      */
     private function buildStandardException($statusCode = 400): MiddlewareInterface
     {
-        return new class ($this->twig,$statusCode) implements MiddlewareInterface {
-            protected $twig;
+        return new class ($this,$statusCode) implements MiddlewareInterface {
+
+            protected $strategy;
             protected $statusCode;
 
-            public function __construct(Twig $twig,$statusCode)
+            public function __construct(HtmlStrategy $strategy,$statusCode)
             {
-                $this->twig = $twig;
+                $this->strategy = $strategy;
                 $this->statusCode = $statusCode;
             }
 
@@ -156,7 +171,7 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
                         'title' => $response->getReasonPhrase(),
                     ),
                 );
-				$response->getBody()->write($this->twig->render('errors.html.twig',$params));
+				$response->getBody()->write($this->strategy->getTwig()->render('errors.html.twig',$params));
                 return $response;
             }
         };

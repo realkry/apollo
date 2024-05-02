@@ -30,7 +30,7 @@ class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
 	/**
 	 * @var string
 	 */
-	private $content_type = 'application/json';
+    protected $content_type = 'application/json';
 
 	/**
 	 * @var \Twig\Environment
@@ -56,6 +56,21 @@ class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
 		}
 	}
 
+    public function getContentType(): string
+    {
+        return $this->content_type;
+    }
+
+    public function getTwig(): Environment
+    {
+        return $this->twig;
+    }
+
+    public function getRouter(): Router
+    {
+        return $this->router;
+    }
+
 	public function invokeRouteCallable(Route $route, ServerRequestInterface $request): ResponseInterface
 	{
 		$response = new \Laminas\Diactoros\Response;
@@ -76,13 +91,13 @@ class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
 
 	public function getThrowableHandler(): MiddlewareInterface
 	{
-		return new class ($this->twig, $this->router) implements MiddlewareInterface
+		return new class ($this) implements MiddlewareInterface
 		{
-			protected $router;
+            protected $strategy;
 
-			public function __construct(Twig $twig, Router $router)
+			public function __construct(JsonStrategy $strategy)
 			{
-				$this->router = $router;
+				$this->strategy = $strategy;
 			}
 
 			public function process(
@@ -96,7 +111,7 @@ class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
 					if ($exception instanceof UnauthorizedException) {
 						$apiResponseBuilder = new APIResponseBuilder(401, "Unauthorized");
 						$response->getBody()->write($apiResponseBuilder->build());
-						return $response;
+						return $response->withHeader('Content-type',$this->strategy->getContentType());
 					}
 					if ($exception instanceof HttpException) {
 						$message = $exception->getMessage();
@@ -116,13 +131,13 @@ class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
 
 						$apiResponseBuilder = new APIResponseBuilder($exception->getStatusCode(), $message, $data);
 						$response->getBody()->write($apiResponseBuilder->build());
-						return $response;
+						return $response->withHeader('Content-type',$this->strategy->getContentType());
 					}
-
+                    $this->strategy->error('FatalError',(array)$exception->getMessage());
 					$response = $response->withStatus(500);
 					$apiResponseBuilder = new APIResponseBuilder($response->getStatusCode(), $response->getReasonPhrase());
 					$response->getBody()->write($apiResponseBuilder->build());
-					return $response;
+					return $response->withHeader('Content-type',$this->strategy->getContentType());
 				}
 			}
 		};
@@ -134,14 +149,14 @@ class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
 	 */
 	private function buildStandardException($statusCode = 400, $message = null): MiddlewareInterface
 	{
-		return new class ($this->twig, $statusCode, $message) implements MiddlewareInterface {
-			protected $twig;
+		return new class ($this, $statusCode, $message) implements MiddlewareInterface {
+			protected $strategy;
 			protected $statusCode;
 			protected $message;
 
-			public function __construct(Twig $twig,$statusCode, $message)
+			public function __construct(JsonStrategy $strategy, Twig $twig,$statusCode, $message)
 			{
-				$this->twig = $twig;
+				$this->strategy = $strategy;
 				$this->statusCode = $statusCode;
 				$this->message = $message;
 			}
@@ -159,7 +174,7 @@ class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
 					$apiResponseBuilder = new APIResponseBuilder($response->getStatusCode(), $response->getReasonPhrase());
 				}
 				$response->getBody()->write($apiResponseBuilder->build());
-				return $response;
+				return $response->withHeader('Content-type',$this->strategy->getContentType());
 			}
 		};
 	}
