@@ -72,6 +72,7 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
 
     public function invokeRouteCallable(Route $route, ServerRequestInterface $request): ResponseInterface
     {
+        $request->withHeader('Content-Type', $this->getContentType());
         $response = new \Laminas\Diactoros\Response;
         $controller = $route->getCallable($this->getContainer());
         $response = $controller($request, $response, $route->getVars());
