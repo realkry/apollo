@@ -73,11 +73,11 @@ class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
 
 	public function invokeRouteCallable(Route $route, ServerRequestInterface $request): ResponseInterface
 	{
-        $request->withHeader('Content-Type', $this->getContentType());
 		$response = new \Laminas\Diactoros\Response;
 		$controller = $route->getCallable($this->getContainer());
 		$response = $controller($request, $response, $route->getVars());
-		return $this->decorateResponse($response);
+        $response = $response->withHeader('Content-Type', $this->getContentType());
+        return $this->decorateResponse($response);
 	}
 
 	public function getNotFoundDecorator(NotFoundException $exception): MiddlewareInterface
