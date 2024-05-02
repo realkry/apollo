@@ -25,36 +25,36 @@ use Twig\Environment;
 
 class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
 {
-	use LoggerHelperTrait;
+    use LoggerHelperTrait;
 
-	/**
-	 * @var string
-	 */
+    /**
+     * @var string
+     */
     protected $content_type = 'application/json';
 
-	/**
-	 * @var \Twig\Environment
-	 */
-	protected $twig;
+    /**
+     * @var \Twig\Environment
+     */
+    protected $twig;
 
-	/**
-	 * @var Router
-	 */
-	protected $router;
+    /**
+     * @var Router
+     */
+    protected $router;
 
-	/**
-	 * @param \Twig\Environment $twig
-	 * @param Router $router
-	 * @param LoggerInterface|null $logger
-	 */
-	public function __construct(Environment $twig, Router $router, LoggerInterface $logger = null)
-	{
-		$this->twig = $twig;
-		$this->router = $router;
-		if ($logger) {
-			$this->setLogger($logger);
-		}
-	}
+    /**
+     * @param \Twig\Environment $twig
+     * @param Router $router
+     * @param LoggerInterface|null $logger
+     */
+    public function __construct(Environment $twig, Router $router, LoggerInterface $logger = null)
+    {
+        $this->twig = $twig;
+        $this->router = $router;
+        if ($logger) {
+            $this->setLogger($logger);
+        }
+    }
 
     public function getContentType(): string
     {
@@ -71,112 +71,112 @@ class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
         return $this->router;
     }
 
-	public function invokeRouteCallable(Route $route, ServerRequestInterface $request): ResponseInterface
-	{
-		$response = new \Laminas\Diactoros\Response;
-		$controller = $route->getCallable($this->getContainer());
-		$response = $controller($request, $response, $route->getVars());
+    public function invokeRouteCallable(Route $route, ServerRequestInterface $request): ResponseInterface
+    {
+        $response = new \Laminas\Diactoros\Response;
+        $controller = $route->getCallable($this->getContainer());
+        $response = $controller($request, $response, $route->getVars());
         $response = $response->withHeader('Content-Type', $this->getContentType());
         return $this->decorateResponse($response);
-	}
+    }
 
-	public function getNotFoundDecorator(NotFoundException $exception): MiddlewareInterface
-	{
-		return $this->buildStandardException(404, "Method not found");
-	}
+    public function getNotFoundDecorator(NotFoundException $exception): MiddlewareInterface
+    {
+        return $this->buildStandardException(404, "Method not found");
+    }
 
-	public function getMethodNotAllowedDecorator(MethodNotAllowedException $exception): MiddlewareInterface
-	{
-		return $this->buildStandardException(405, "Method not allowed");
-	}
+    public function getMethodNotAllowedDecorator(MethodNotAllowedException $exception): MiddlewareInterface
+    {
+        return $this->buildStandardException(405, "Method not allowed");
+    }
 
-	public function getThrowableHandler(): MiddlewareInterface
-	{
-		return new class ($this) implements MiddlewareInterface
-		{
+    public function getThrowableHandler(): MiddlewareInterface
+    {
+        return new class ($this) implements MiddlewareInterface {
             protected $strategy;
 
-			public function __construct(JsonStrategy $strategy)
-			{
-				$this->strategy = $strategy;
-			}
+            public function __construct(JsonStrategy $strategy)
+            {
+                $this->strategy = $strategy;
+            }
 
-			public function process(
-				ServerRequestInterface $request,
-				RequestHandlerInterface $handler
-			): ResponseInterface {
-				try {
-					return $handler->handle($request);
-				} catch (Exception $exception) {
-					$response = new \Laminas\Diactoros\Response;
-					if ($exception instanceof UnauthorizedException) {
-						$apiResponseBuilder = new APIResponseBuilder(401, "Unauthorized");
-						$response->getBody()->write($apiResponseBuilder->build());
-						return $response->withHeader('Content-type',$this->strategy->getContentType());
-					}
-					if ($exception instanceof HttpException) {
-						$message = $exception->getMessage();
-						$data = array();
-						try {
-							$messageDecoded = json_decode($message, true);
-							if (!empty($messageDecoded)) {
-								if (isset($messageDecoded["message"])) {
-									$message = $messageDecoded["message"];
-								}
-								if (isset($messageDecoded["data"])) {
-									$data = $messageDecoded["data"];
-								}
-							}
-						} catch (Exception $e) {
-						}
+            public function process(
+                ServerRequestInterface  $request,
+                RequestHandlerInterface $handler
+            ): ResponseInterface
+            {
+                try {
+                    return $handler->handle($request);
+                } catch (Exception $exception) {
+                    $response = new \Laminas\Diactoros\Response;
+                    if ($exception instanceof UnauthorizedException) {
+                        $apiResponseBuilder = new APIResponseBuilder(401, "Unauthorized");
+                        $response->getBody()->write($apiResponseBuilder->build());
+                        return $response->withHeader('Content-type', $this->strategy->getContentType());
+                    }
+                    if ($exception instanceof HttpException) {
+                        $message = $exception->getMessage();
+                        $data = array();
+                        try {
+                            $messageDecoded = json_decode($message, true);
+                            if (!empty($messageDecoded)) {
+                                if (isset($messageDecoded["message"])) {
+                                    $message = $messageDecoded["message"];
+                                }
+                                if (isset($messageDecoded["data"])) {
+                                    $data = $messageDecoded["data"];
+                                }
+                            }
+                        } catch (Exception $e) {
+                        }
 
-						$apiResponseBuilder = new APIResponseBuilder($exception->getStatusCode(), $message, $data);
-						$response->getBody()->write($apiResponseBuilder->build());
-						return $response->withHeader('Content-type',$this->strategy->getContentType());
-					}
-                    $this->strategy->error('FatalError',(array)$exception->getMessage());
-					$response = $response->withStatus(500);
-					$apiResponseBuilder = new APIResponseBuilder($response->getStatusCode(), $response->getReasonPhrase());
-					$response->getBody()->write($apiResponseBuilder->build());
-					return $response->withHeader('Content-type',$this->strategy->getContentType());
-				}
-			}
-		};
-	}
+                        $apiResponseBuilder = new APIResponseBuilder($exception->getStatusCode(), $message, $data);
+                        $response->getBody()->write($apiResponseBuilder->build());
+                        return $response->withHeader('Content-type', $this->strategy->getContentType());
+                    }
+                    $this->strategy->error('FatalError', (array)$exception->getMessage());
+                    $response = $response->withStatus(500);
+                    $apiResponseBuilder = new APIResponseBuilder($response->getStatusCode(), $response->getReasonPhrase());
+                    $response->getBody()->write($apiResponseBuilder->build());
+                    return $response->withHeader('Content-type', $this->strategy->getContentType());
+                }
+            }
+        };
+    }
 
-	/**
-	 * @param $statusCode
-	 * @return MiddlewareInterface
-	 */
-	private function buildStandardException($statusCode = 400, $message = null): MiddlewareInterface
-	{
-		return new class ($this, $statusCode, $message) implements MiddlewareInterface {
-			protected $strategy;
-			protected $statusCode;
-			protected $message;
+    /**
+     * @param $statusCode
+     * @return MiddlewareInterface
+     */
+    private function buildStandardException($statusCode = 400, $message = null): MiddlewareInterface
+    {
+        return new class ($this, $statusCode, $message) implements MiddlewareInterface {
+            protected $strategy;
+            protected $statusCode;
+            protected $message;
 
-			public function __construct(JsonStrategy $strategy, Twig $twig,$statusCode, $message)
-			{
-				$this->strategy = $strategy;
-				$this->statusCode = $statusCode;
-				$this->message = $message;
-			}
+            public function __construct(JsonStrategy $strategy, $statusCode, $message)
+            {
+                $this->strategy = $strategy;
+                $this->statusCode = $statusCode;
+                $this->message = $message;
+            }
 
-			public function process(
-				ServerRequestInterface  $request,
-				RequestHandlerInterface $handler
-			): ResponseInterface
-			{
-				$response = new \Laminas\Diactoros\Response;
-				$response = $response->withStatus($this->statusCode);
-				if($this->message != null){
-					$apiResponseBuilder = new APIResponseBuilder($this->statusCode, $this->message);
-				}else{
-					$apiResponseBuilder = new APIResponseBuilder($response->getStatusCode(), $response->getReasonPhrase());
-				}
-				$response->getBody()->write($apiResponseBuilder->build());
-				return $response->withHeader('Content-type',$this->strategy->getContentType());
-			}
-		};
-	}
+            public function process(
+                ServerRequestInterface  $request,
+                RequestHandlerInterface $handler
+            ): ResponseInterface
+            {
+                $response = new \Laminas\Diactoros\Response;
+                $response = $response->withStatus($this->statusCode);
+                if ($this->message != null) {
+                    $apiResponseBuilder = new APIResponseBuilder($this->statusCode, $this->message);
+                } else {
+                    $apiResponseBuilder = new APIResponseBuilder($response->getStatusCode(), $response->getReasonPhrase());
+                }
+                $response->getBody()->write($apiResponseBuilder->build());
+                return $response->withHeader('Content-type', $this->strategy->getContentType());
+            }
+        };
+    }
 }
