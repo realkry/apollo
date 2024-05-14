@@ -109,7 +109,7 @@ class HtmlStrategy extends ApplicationStrategy implements LoggerHelperInterface
                 } catch (Exception $exception) {
                     $response = new \Laminas\Diactoros\Response;
                     if ($exception instanceof UnauthorizedException) {
-                        $response = $response->withHeader('Location', $this->router->getRealUrl($this->router->getNamedRoute('login')->getPath()));
+                        $response = $response->withHeader('Location', $this->strategy->getRouter()->getRealUrl($this->strategy->getRouter()->getNamedRoute('login')->getPath()));
                         return $response;
                     }
                     if ($exception instanceof HttpException) {
