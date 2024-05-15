@@ -101,6 +101,7 @@ class FormBuilder implements FormBuilderInterface
                 'id' => $name,
                 'required' => $required,
             ),
+            'options' => array(),
         );
 
         if ($class != null) {
