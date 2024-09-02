@@ -43,6 +43,15 @@ class FormBuilder implements FormBuilderInterface
     }
 
     /**
+     * @param $entity
+     * @return object
+     */
+    public function createEntity($entity): object
+    {
+        return $this->form->getHydrator()->hydrate($this->form->getData(), $entity);
+    }
+
+    /**
      * @return void
      */
     private function buildAttributes()
@@ -55,6 +64,9 @@ class FormBuilder implements FormBuilderInterface
         );
         if ($this->getResultText() != null) {
             $attributes['data-result-text'] = $this->getResultText();
+        }
+        if ($this->getResultUrl() != null) {
+            $attributes['data-result-redirect'] = $this->getResultUrl();
         }
         if (!empty($this->formAttributes)) {
             $attributes = array_merge($attributes, $this->formAttributes);
@@ -101,7 +113,7 @@ class FormBuilder implements FormBuilderInterface
                 'id' => $name,
                 'required' => $required,
             ),
-            'options' => array(),
+            'options' => array()
         );
 
         if ($class != null) {
