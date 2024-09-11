@@ -18,16 +18,16 @@ class Auth
     protected $config;
 
     /**
-     * @var EntityManagerInterface
+     * @var EntityManagerInterface|null
      */
-    protected EntityManagerInterface $entityManager;
+    protected EntityManagerInterface|null $entityManager;
 
     /**
      * Auth constructor.
-     * @param EntityManagerInterface $entityManager
+     * @param EntityManagerInterface|null $entityManager
      * @param Config $config
      */
-    public function __construct(EntityManagerInterface $entityManager,Config $config)
+    public function __construct(Config $config, EntityManagerInterface $entityManager = null)
     {
         $this->config = $config;
         $this->entityManager = $entityManager;

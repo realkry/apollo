@@ -56,12 +56,12 @@ class Helper implements LoggerHelperInterface
 
     /**
      * ApolloContainer constructor.
-     * @param EntityManagerInterface $entityManager
+     * @param EntityManagerInterface|null $entityManager
      * @param Config $config
      * @param Auth $auth
      * @param LoggerInterface|null $logger
      */
-    public function __construct(EntityManagerInterface $entityManager, Config $config, Auth $auth, LoggerInterface $logger = null)
+    public function __construct(Config $config, Auth $auth, EntityManagerInterface $entityManager = null, LoggerInterface $logger = null)
     {
         $this->entityManager = $entityManager;
         $this->auth = $auth;

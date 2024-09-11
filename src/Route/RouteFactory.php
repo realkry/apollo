@@ -1,4 +1,5 @@
 <?php
+
 namespace Metapp\Apollo\Route;
 
 
@@ -27,7 +28,7 @@ class RouteFactory implements InvokableFactoryInterface, ConfigurableFactoryInte
      */
     public function __invoke()
     {
-        if (null==$this->config) {
+        if (null == $this->config) {
             throw new Exception(__CLASS__ . " can't work without configuration");
         }
 
@@ -48,7 +49,7 @@ class RouteFactory implements InvokableFactoryInterface, ConfigurableFactoryInte
                             'title' => $response->getReasonPhrase(),
                         ),
                     );
- $response->getBody()->write($twig->render('errors.html.twig', $params));
+                    $response->getBody()->write($twig->render('errors.html.twig', $params));
                 }
             }
             die(Html::response($response));
@@ -58,8 +59,8 @@ class RouteFactory implements InvokableFactoryInterface, ConfigurableFactoryInte
         $container->addShared(ServerRequestInterface::class, $request);
         $container->delegate($this->container);
 
-        $parser = $this->container->has(RouteParser::class) ? $this->container->get(RouteParser::class): null;
-        $generator = $this->container->has(DataGenerator::class) ? $this->container->get(DataGenerator::class): null;
+        $parser = $this->container->has(RouteParser::class) ? $this->container->get(RouteParser::class) : null;
+        $generator = $this->container->has(DataGenerator::class) ? $this->container->get(DataGenerator::class) : null;
         $router = new Router($container, $parser, $generator);
 
         $router->configure($this->config);

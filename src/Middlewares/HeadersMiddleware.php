@@ -35,10 +35,10 @@ class HeadersMiddleware implements MiddlewareInterface
     protected $entityManager;
 
 
-    public function __construct($options, EntityManagerInterface $em, Config $config)
+    public function __construct($options, Config $config, EntityManagerInterface $em = null)
     {
         $this->options = $options;
-        $this->auth = new Auth($em,$config);
+        $this->auth = new Auth($config, $em);
         $this->config = $config;
         $this->entityManager = $em;
     }

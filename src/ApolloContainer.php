@@ -69,12 +69,12 @@ class ApolloContainer implements LoggerHelperInterface
      * ApolloContainer constructor.
      * @param Config $config
      * @param \Twig\Environment $twig
-     * @param EntityManagerInterface $entityManager
+     * @param EntityManagerInterface|null $entityManager
      * @param Helper $helper
      * @param Auth $auth
      * @param LoggerInterface|null $logger
      */
-    public function __construct(Config $config, Environment $twig, EntityManagerInterface $entityManager, Helper $helper, Auth $auth, LoggerInterface $logger = null)
+    public function __construct(Config $config, Environment $twig, Helper $helper, Auth $auth, EntityManagerInterface $entityManager = null, LoggerInterface $logger = null)
     {
         $this->config = $config->fromDimension(array('route','modules'));
         $this->twig = $twig;

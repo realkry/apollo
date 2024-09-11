@@ -76,7 +76,15 @@ class JsonStrategy extends ApplicationStrategy implements LoggerHelperInterface
         $response = new \Laminas\Diactoros\Response;
         $controller = $route->getCallable($this->getContainer());
         $response = $controller($request, $response, $route->getVars());
-        $response = $response->withHeader('Content-Type', $this->getContentType());
+        $contentType = $this->getContentType();
+        if(!empty($response->getHeaders())) {
+            foreach ($response->getHeaders() as $headerKey => $headerVal) {
+                if($headerKey == 'Content-Type') {
+                    $contentType = $headerVal[0];
+                }
+            }
+        }
+        $response = $response->withHeader('Content-Type', $contentType);
         return $this->decorateResponse($response);
     }
 

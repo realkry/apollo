@@ -30,7 +30,7 @@ class PermissionGroupMiddleware implements MiddlewareInterface
     protected $config;
 
     /**
-     * @var EntityManagerInterface
+     * @var EntityManagerInterface|null
      */
     protected $entityManager;
 
@@ -40,10 +40,10 @@ class PermissionGroupMiddleware implements MiddlewareInterface
     protected $user;
 
 
-    public function __construct($options, EntityManagerInterface $em, Config $config, $user)
+    public function __construct($options, Config $config, $user, EntityManagerInterface $em = null)
     {
         $this->options = $options;
-        $this->auth = new Auth($em,$config);
+        $this->auth = new Auth($config, $em);
         $this->config = $config;
         $this->entityManager = $em;
         $this->user = $user;
