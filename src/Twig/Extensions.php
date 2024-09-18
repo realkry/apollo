@@ -30,17 +30,18 @@ class Extensions extends AbstractExtension
     {
         return array(
             new TwigFunction('getBasepath', array($this, 'basepath')),
-            new TwigFunction('getFileTime', array($this, 'getFilemtime')),x0
+            new TwigFunction('getFileTime', array($this, 'getFilemtime')),
         );
     }
 
     /**
      * @param $path
+     * @param bool $rewritePath
      * @return string
      */
-    public function basepath($path,$rewritePath = false)
+    public function basepath($path, $rewritePath = false)
     {
-        return !$rewritePath ? $this->helper->getRealUrl($path) : '/'.$path;
+        return !$rewritePath ? $this->helper->getRealUrl($path) : '/' . $path;
     }
 
     /**
