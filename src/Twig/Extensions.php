@@ -30,7 +30,7 @@ class Extensions extends AbstractExtension
     {
         return array(
             new TwigFunction('getBasepath', array($this, 'basepath')),
-            new TwigFunction('getFileTime', array($this, 'getFilemtime')),
+            new TwigFunction('getFileTime', array($this, 'getFilemtime')),x0
         );
     }
 
@@ -51,6 +51,6 @@ class Extensions extends AbstractExtension
      */
     public function getFilemtime($path)
     {
-        return filemtime(implode(DIRECTORY_SEPARATOR, array($this->baseDir, ltrim($path, '/\\'))));
+        return filemtime(implode(DIRECTORY_SEPARATOR, array(BASE_DIR, ltrim($path, '/\\'))));
     }
 }
