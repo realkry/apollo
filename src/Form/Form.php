@@ -78,7 +78,7 @@ class Form extends \Laminas\Form\Form implements TranslatorAwareInterface, Trans
     public static function getLanguageFromUrl()
     {
         $languages = array();
-        $dirPath = $_SERVER["DOCUMENT_ROOT"] . '/config/translations';
+        $dirPath = $this->baseDir . '/config/translations';
         $files = scandir($dirPath);
         foreach ($files as $file) {
             if($file != "." && $file != "..") {

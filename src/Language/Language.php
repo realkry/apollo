@@ -236,9 +236,9 @@ class Language extends ApolloContainer
 			$spreadsheet->getActiveSheet()->fromArray($exportData);
 			$writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
 			try {
-				$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/translations.xlsx';
+				$fileLocation = $this->baseDir . '/translations.xlsx';
 				if ($isAppTranslations){
-					$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/app_translations.xlsx';
+					$fileLocation = $this->baseDir . '/app_translations.xlsx';
 				}
 				$writer->save($fileLocation);
 				return 'Your file location is: ' . $fileLocation;
@@ -256,7 +256,7 @@ class Language extends ApolloContainer
 	public function exportAppLanguagesToJSON(): string
 	{
 		foreach ($this->app_translate as $key => $lang){
-			$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/'.$key.'.json';
+			$fileLocation = $this->baseDir . '/'.$key.'.json';
 			try {
 				file_put_contents($fileLocation, json_encode($lang));
 			}catch (\Exception $e){
@@ -297,9 +297,9 @@ class Language extends ApolloContainer
 	{
 		if (class_exists('\PhpOffice\PhpSpreadsheet\IOFactory')) {
 			if ($fileLocation == null) {
-				$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/translations.xlsx';
+				$fileLocation = $this->baseDir . '/translations.xlsx';
 				if ($isAppTranslations){
-					$fileLocation = $_SERVER["DOCUMENT_ROOT"] . '/app_translations.xlsx';
+					$fileLocation = $this->baseDir . '/app_translations.xlsx';
 				}
 			}
 			if (file_exists($fileLocation)) {
@@ -371,9 +371,9 @@ class Language extends ApolloContainer
 	private function saveConvertedExcelDataToTranslationFiles($convertedData, bool $isAppTranslations = false): bool
 	{
 		$filesCreated = true;
-		$folderLocation = $_SERVER["DOCUMENT_ROOT"] . '/config/translations';
+		$folderLocation = $this->baseDir . '/config/translations';
 		if ($isAppTranslations){
-			$folderLocation = $_SERVER["DOCUMENT_ROOT"] . '/config/translations/app';
+			$folderLocation = $this->baseDir . '/config/translations/app';
 		}
 		foreach ($convertedData as $language => $data) {
 			if (file_put_contents($folderLocation . '/' . $language . '.php', "<?php \n\n return " . var_export($data, true) . ";") == false) {
