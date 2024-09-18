@@ -93,7 +93,7 @@ class Apollo
     public function setBaseDir($baseDir)
     {
         $this->baseDir = $baseDir;
-        define("BASE_DIR",$this->baseDir);
+        define("BASE_DIR", $this->baseDir);
         return $this;
     }
 
@@ -112,7 +112,7 @@ class Apollo
     public function setHomeDir($homeDir)
     {
         $this->homeDir = $homeDir;
-        define("HOME_DIR",$this->homeDir);
+        define("HOME_DIR", $this->homeDir);
         return $this;
     }
 
@@ -134,22 +134,23 @@ class Apollo
         return $this;
     }
 
-    private function initConfigs(){
-        $configPath = $this->baseDir."/config/";
+    private function initConfigs()
+    {
+        $configPath = $this->baseDir . "/config/";
         Factory::setConfigPath($configPath);
         $configModules = $this->configModules;
-        if(empty($configModules)){
-            $configModules = $this->buildRoutes(array_diff(scandir($configPath), array_merge(array('.', '..','cli-config.php','translations'),$this->excludedConfigDirs)));
+        if (empty($configModules)) {
+            $configModules = $this->buildRoutes(array_diff(scandir($configPath), array_merge(array('.', '..', 'cli-config.php', 'translations'), $this->excludedConfigDirs)));
         }
         $this->config = Factory::fromNames($configModules, true);
     }
 
     public function run()
     {
-        if($this->allowErrorReporting){
-            ini_set('display_errors','true');
+        if ($this->allowErrorReporting) {
+            ini_set('display_errors', 'true');
             error_reporting(E_ALL);
-        }else{
+        } else {
             ini_set("display_errors", 'false');
             error_reporting(0);
         }
@@ -171,39 +172,40 @@ class Apollo
         return $core->go();
     }
 
-    private function buildRoutes($array = array()){
+    private function buildRoutes($array = array())
+    {
         $moduleFolders = array();
-        foreach (new \DirectoryIterator($_SERVER["DOCUMENT_ROOT"]."/modules") as $dir) {
+        foreach (new \DirectoryIterator($this->baseDir . "/modules") as $dir) {
             if ($dir->isDot()) continue;
             if ($dir->isDir()) {
                 $moduleFolders[] = $dir->current()->getFilename();
             }
         }
-        if($this->dynamicRouteLoad) {
+        if ($this->dynamicRouteLoad) {
             $findUrlBasepath = explode("/", $_SERVER['REQUEST_URI'])[1];
-            foreach($array as $itemKey => $item){
-                if(in_array($findUrlBasepath,$moduleFolders)){
-                    if(strpos($item,'rout') !== false) {
+            foreach ($array as $itemKey => $item) {
+                if (in_array($findUrlBasepath, $moduleFolders)) {
+                    if (strpos($item, 'rout') !== false) {
                         if (strpos($item, $findUrlBasepath . '_rout') === false) {
                             unset($array[$itemKey]);
                         }
-                        if(str_contains($item, '_rout')){
+                        if (str_contains($item, '_rout')) {
                             $basePathLength = strlen($findUrlBasepath);
-                            if(substr($item, 0, $basePathLength) != $findUrlBasepath){
+                            if (substr($item, 0, $basePathLength) != $findUrlBasepath) {
                                 unset($array[$itemKey]);
                             }
                         }
                     }
-                }else{
-                    if(strpos($item,'_rout') !== false){
+                } else {
+                    if (strpos($item, '_rout') !== false) {
                         unset($array[$itemKey]);
                     }
                 }
             }
         }
 
-        return array_map(function($file){
-            return explode(".php",$file)[0];
-        },$array);
+        return array_map(function ($file) {
+            return explode(".php", $file)[0];
+        }, $array);
     }
 }
