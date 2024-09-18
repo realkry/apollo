@@ -52,6 +52,6 @@ class Extensions extends AbstractExtension
      */
     public function getFilemtime($path)
     {
-        return filemtime(implode(DIRECTORY_SEPARATOR, array(BASE_DIR, ltrim($path, '/\\'))));
+        return filemtime(implode(DIRECTORY_SEPARATOR, array(BASE_DIR . '/public/', ltrim($path, '/\\'))));
     }
 }
