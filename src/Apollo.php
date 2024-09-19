@@ -140,7 +140,7 @@ class Apollo
         Factory::setConfigPath($configPath);
         $configModules = $this->configModules;
         if (empty($configModules)) {
-            $configModules = $this->buildRoutes(array_diff(scandir($configPath), array_merge(array('.', '..', 'cli-config.php', 'translations'), $this->excludedConfigDirs)));
+            $configModules = $this->buildRoutes(array_diff(scandir($configPath), array_merge(array('.', '..', 'cli-config.php', 'translations', 'local'), $this->excludedConfigDirs)));
         }
         $this->config = Factory::fromNames($configModules, true);
 
