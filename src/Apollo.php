@@ -143,6 +143,15 @@ class Apollo
             $configModules = $this->buildRoutes(array_diff(scandir($configPath), array_merge(array('.', '..', 'cli-config.php', 'translations'), $this->excludedConfigDirs)));
         }
         $this->config = Factory::fromNames($configModules, true);
+
+        // local configs
+        $localConfigPath = $this->baseDir . "/config/local/";
+        if (is_dir($localConfigPath)) {
+            $localConfigModules = array_diff(scandir($localConfigPath), array_merge(array('.', '..', 'cli-config.php', 'translations', '.gitkeep'), $this->excludedConfigDirs));
+            foreach ($localConfigModules as $module) {
+                $this->config = $this->config->merge(Factory::fromName('local/' . str_replace('.php', '', $module)));
+            }
+        }
     }
 
     public function run()
