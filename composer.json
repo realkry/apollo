@@ -34,7 +34,7 @@
         "doctrine/doctrine-module": "5.*",
         "league/container": "4.2.0",
         "monolog/monolog": "3.2.0",
-        "guzzlehttp/psr7": "2.4.1",
+        "guzzlehttp/psr7": "^2.4",
         "league/route": "5.1.2",
         "twig/twig": "3.4.3",
         "doctrine/orm": "2.12.2",
