@@ -13,6 +13,8 @@ use Metapp\Apollo\Utils\ServiceProvider;
 
 class Apollo
 {
+    private int $error_level = E_ALL;
+
     /** @var array $configModules */
     private $configModules = array();
 
@@ -63,9 +65,15 @@ class Apollo
         $this->configModules = $configModules;
     }
 
-    public function allowErrorReporting()
+    /**
+     * @param bool $errorReporting
+     * @param int $error_level
+     * @return void
+     */
+    public function setErrorReporting(bool $errorReporting = false, int $error_level = E_ALL)
     {
-        $this->allowErrorReporting = true;
+        $this->error_level = $error_level;
+        $this->allowErrorReporting = $errorReporting;
     }
 
     public function setDynamicRouteLoad($load = false)
@@ -158,7 +166,7 @@ class Apollo
     {
         if ($this->allowErrorReporting) {
             ini_set('display_errors', 'true');
-            error_reporting(E_ALL);
+            error_reporting($this->error_level);
         } else {
             ini_set("display_errors", 'false');
             error_reporting(0);
