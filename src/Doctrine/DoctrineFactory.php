@@ -154,9 +154,9 @@ class DoctrineFactory implements InvokableFactoryInterface, ConfigurableFactoryI
             }
             if ($pdo instanceof PDO) {
                 try {
-                    $pdoConfig = Factory::fromNames(array('db'), true);
-                } catch (Exception $e) {
                     $pdoConfig = Factory::fromNames(array('local/db'), true);
+                } catch (Exception $e) {
+                    $pdoConfig = Factory::fromNames(array('db'), true);
                 }
                 $this->config->set(
                     array('dbParams'),
